@@ -36,17 +36,6 @@
             max-width: 1200px;
             margin-top: 20px; /* Add gap at the top of the container */
         }
-        
-        /* Header Styles */
-        .header {
-            background-color: #0ac2f5;
-            color: #ffffff;
-            padding: 20px;
-            text-align: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-            width: 100%;
-        }
 
         h1 {
             font-size: 2rem;
@@ -120,10 +109,6 @@
 
         /* Ensure the header and container have spacing for mobile */
         @media screen and (max-width: 768px) {
-            .header {
-                font-size: 1.2rem;
-                padding: 15px;
-            }
             .container {
                 width: 95%;
             }
@@ -136,10 +121,8 @@
 </head>
 <body>
 
-
-
 <div class="container">
-    
+    <h1>Anime EPG Viewer</h1>
     <div id="epg-container" class="epg-container">
         <!-- Cards will be inserted here -->
     </div>
@@ -148,7 +131,7 @@
 
 <script>
     const apiUrl = 'https://jiotv.data.cdn.jio.com/apis/v1.3/getepg/get?offset=0&channel_id=2258';
-    
+
     // Fetch EPG data and update the page
     function fetchEPGData() {
         fetch(apiUrl)
@@ -161,6 +144,8 @@
                 const now = Date.now();
                 epgContainer.innerHTML = ''; // Clear existing cards
 
+                let currentlyAiringCard = null;
+
                 data.epg.forEach(show => {
                     const card = document.createElement('div');
                     card.classList.add('card');
@@ -168,6 +153,7 @@
                     // Highlight currently airing show
                     if (now >= show.startEpoch && now <= show.endEpoch) {
                         card.classList.add('currently-airing');
+                        currentlyAiringCard = card; // Store currently airing card
                     }
 
                     card.innerHTML = `
@@ -179,6 +165,11 @@
                     `;
                     epgContainer.appendChild(card);
                 });
+
+                // Auto-scroll to the currently airing show
+                if (currentlyAiringCard) {
+                    currentlyAiringCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
             })
             .catch(error => {
                 console.error('Error fetching EPG data:', error);
