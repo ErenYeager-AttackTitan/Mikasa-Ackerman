@@ -26,14 +26,15 @@
             padding: 0;
             display: flex;
             justify-content: center;
-            align-items: center;
-            height: 100vh;
+            align-items: flex-start;
+            min-height: 100vh;
             flex-direction: column;
         }
         
         .container {
             width: 90%;
             max-width: 1200px;
+            margin-top: 20px; /* Add gap at the top of the container */
         }
         
         /* Header Styles */
@@ -65,6 +66,7 @@
             transition: all 0.3s;
             width: 280px;
             min-height: 200px;
+            margin-top: 20px; /* Ensures gap between cards */
         }
         
         .card:hover {
@@ -114,6 +116,21 @@
             margin-top: 20px;
             font-size: 1rem;
             color: #adf0e2;
+        }
+
+        /* Ensure the header and container have spacing for mobile */
+        @media screen and (max-width: 768px) {
+            .header {
+                font-size: 1.2rem;
+                padding: 15px;
+            }
+            .container {
+                width: 95%;
+            }
+            .card {
+                width: 100%;
+                max-width: 300px;
+            }
         }
     </style>
 </head>
