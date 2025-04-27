@@ -1,36 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Watch Animax India EPG on Mikasa Ackerman. Get the latest TV show schedule with airing details. Stay updated with the best of Animax shows!">
-  <meta name="keywords" content="Animax India, EPG, TV Schedule, Watch Animax, TV Shows, Mikasa Ackerman">
-  <meta name="author" content="Mikasa Ackerman">
-  <meta property="og:title" content="Watch Animax India EPG on Mikasa Ackerman">
-  <meta property="og:description" content="Get the latest TV show schedule on Animax India. Watch your favorite shows and stay updated with airing times.">
-  <meta property="og:image" content="https://mikasa-ackerman-cdn.pages.dev/index.jpg">
-  <meta property="og:url" content="https://mikasa-ackerman-cdn.pages.dev">
-  <meta property="og:type" content="website">
-  <title>Watch Animax India EPG on Mikasa Ackerman</title>
-
-  <!-- Favicon -->
-  <link rel="icon" href="https://mikasa-ackerman-cdn.pages.dev/index.jpg" type="image/x-icon">
-
-  <!-- Open Graph & SEO Meta Tags -->
-  <meta name="robots" content="index, follow">
-  <meta name="googlebot" content="index, follow">
-
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ErenYeager-AttackTitan/Mikasa-Ackerman@main/css/animax-india.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Watch anime streaming schedules with real-time updates. Stay updated with the anime EPG.">
+    <meta name="keywords" content="Anime, Streaming, EPG, Schedule, Anime Schedule, TV Shows">
+    <meta name="author" content="Your Name">
+    <meta property="og:title" content="Watch Anime EPG - Live Schedule Updates">
+    <meta property="og:description" content="Get the latest anime streaming schedules with real-time updates on your website.">
+    <meta property="og:image" content="https://mikasa-ackerman-cdn.pages.dev/index.jpg">
+    <meta property="og:url" content="https://yourwebsite.com">
+    <title>Anime Streamer - EPG Viewer</title>
+    <style>
+        /* Tailwind CSS */
+        body {
+            background-color: #000000;
+            font-family: Arial, sans-serif;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 1200px;
+        }
+        
+        .card {
+            background-color: #adf0e2;
+            color: #000;
+            border-radius: 10px;
+            margin: 10px;
+            padding: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+        
+        .card:hover {
+            background-color: #0addf5;
+            cursor: pointer;
+        }
+        
+        .currently-airing {
+            background-color: #0ac2f5;
+        }
+        
+        .card h3, .card p {
+            margin: 0;
+            padding: 5px 0;
+        }
+        
+        .card .time {
+            font-size: 14px;
+        }
+        
+        .card .episode {
+            font-weight: bold;
+        }
+        
+        .currently-airing h3 {
+            font-size: 1.25rem;
+        }
+        
+        .epg-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+        
+        .loading {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+            color: #adf0e2;
+        }
+    </style>
 </head>
+<body>
 
-<body class="font-sans antialiased">
+<div class="container">
+    <h1 class="text-3xl text-center text-white mb-4">Anime EPG Viewer</h1>
+    <div id="epg-container" class="epg-container">
+        <!-- Cards will be inserted here -->
+    </div>
+    <div id="loading" class="loading">Loading...</div>
+</div>
 
-  <!-- Placeholder for dynamic content -->
-  <div id="epg-container" class="container mx-auto p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+<script>
+    const apiUrl = 'https://jiotv.data.cdn.jio.com/apis/v1.3/getepg/get?offset=0&channel_id=2258';
+    
+    // Fetch EPG data and update the page
+    function fetchEPGData() {
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                const epgContainer = document.getElementById('epg-container');
+                const loading = document.getElementById('loading');
+                loading.style.display = 'none'; // Hide loading text
 
-  <script src="https://github.com/ErenYeager-AttackTitan/Mikasa-Ackerman/blob/main/js/animax-india.js"></script>
+                const now = Date.now();
+                epgContainer.innerHTML = ''; // Clear existing cards
+
+                data.epg.forEach(show => {
+                    const card = document.createElement('div');
+                    card.classList.add('card');
+
+                    // Highlight currently airing show
+                    if (now >= show.startEpoch && now <= show.endEpoch) {
+                        card.classList.add('currently-airing');
+                    }
+
+                    card.innerHTML = `
+                        <h3>${show.showname}</h3>
+                        <p>${show.description}</p>
+                        <p class="time">Start Time: ${new Date(show.startEpoch).toLocaleTimeString()}</p>
+                        <p class="time">End Time: ${new Date(show.endEpoch).toLocaleTimeString()}</p>
+                        <p class="episode">Episode ${show.episode_num}</p>
+                    `;
+                    epgContainer.appendChild(card);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching EPG data:', error);
+                const loading = document.getElementById('loading');
+                loading.innerText = 'Failed to load data, please try again later.';
+            });
+    }
+
+    // Fetch data every 5 seconds
+    setInterval(fetchEPGData, 5000);
+
+    // Initial data fetch
+    fetchEPGData();
+</script>
+
 </body>
-
 </html>
-
