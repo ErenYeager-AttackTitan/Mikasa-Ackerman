@@ -5,17 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Watch anime streaming schedules with real-time updates. Stay updated with the anime EPG.">
     <meta name="keywords" content="Anime, Streaming, EPG, Schedule, Anime Schedule, TV Shows">
-    <meta name="author" content="Your Name">
+    <meta name="author" content="Mikasa Ackerman">
     <meta property="og:title" content="Watch Anime EPG - Live Schedule Updates">
     <meta property="og:description" content="Get the latest anime streaming schedules with real-time updates on your website.">
     <meta property="og:image" content="https://mikasa-ackerman-cdn.pages.dev/index.jpg">
     <meta property="og:url" content="https://yourwebsite.com">
-    <title>Anime Streamer - EPG Viewer</title>
+    <meta property="og:site_name" content="Anime Streamer">
+    <title>Watch Anime EPG - Live Schedule Updates by Mikasa Ackerman</title>
+
+    <!-- Importing Google Fonts (Roboto) -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
     <style>
         /* Tailwind CSS */
         body {
             background-color: #000000;
-            font-family: Arial, sans-serif;
+            font-family: 'Roboto', sans-serif;
             color: #ffffff;
             margin: 0;
             padding: 0;
@@ -30,14 +35,24 @@
             max-width: 1200px;
         }
         
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffffff;
+        }
+
         .card {
             background-color: #adf0e2;
             color: #000;
             border-radius: 10px;
             margin: 10px;
-            padding: 10px;
+            padding: 15px;
             box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
             transition: all 0.3s;
+            width: 280px;
+            min-height: 200px;
         }
         
         .card:hover {
@@ -48,34 +63,44 @@
         .currently-airing {
             background-color: #0ac2f5;
         }
-        
-        .card h3, .card p {
-            margin: 0;
-            padding: 5px 0;
-        }
-        
-        .card .time {
-            font-size: 14px;
-        }
-        
-        .card .episode {
-            font-weight: bold;
-        }
-        
-        .currently-airing h3 {
+
+        .card h3 {
             font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 10px;
         }
         
+        .card p {
+            font-size: 0.875rem;
+            margin: 5px 0;
+        }
+
+        .card .time {
+            font-size: 0.75rem;
+            color: #999999;
+        }
+
+        .card .episode {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .currently-airing h3 {
+            font-size: 1.375rem;
+            font-weight: 700;
+        }
+
         .epg-container {
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-around;
+            justify-content: center;
+            gap: 20px;
         }
         
         .loading {
             text-align: center;
             margin-top: 20px;
-            font-size: 18px;
+            font-size: 1rem;
             color: #adf0e2;
         }
     </style>
@@ -83,7 +108,7 @@
 <body>
 
 <div class="container">
-    <h1 class="text-3xl text-center text-white mb-4">Anime EPG Viewer</h1>
+    <h1>Anime EPG Viewer</h1>
     <div id="epg-container" class="epg-container">
         <!-- Cards will be inserted here -->
     </div>
