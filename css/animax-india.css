@@ -1,0 +1,42 @@
+/* style.css */
+body {
+  background-color: #000000; /* Page background color */
+}
+
+.card {
+  background-color: #adf0e2; /* Card background color */
+  transition: transform 0.2s, box-shadow 0.2s ease-in-out, background-color 0.2s;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem; /* Space between cards */
+}
+
+.card:hover {
+  background-color: #0addf5; /* Hover background color */
+  transform: translateY(-5px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.currently-airing {
+  background-color: #0ac2f5; /* Currently airing show color */
+  border: 4px solid #007bff;
+}
+
+.show-time {
+  font-size: 0.875rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+.show-description {
+  font-size: 0.875rem;
+  color: #333;
+  margin-top: 0.5rem;
+}
+
+.show-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+}
