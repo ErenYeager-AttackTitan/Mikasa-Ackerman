@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="View full nhentai galleries instantly on Ackerman Mikasa. Enter nhentai codes to explore complete hentai doujinshi collections." />
+<meta name="keywords" content="Ackerman Mikasa, nhentai, nhentai codes, full galleries, hentai doujinshi, hentai gallery, complete collections" />
+<meta name="author" content="ErenRogue" />
+<title>Ackerman Mikasa - View Full NHentai Galleries Instantly</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
+  body {
+    margin: 0;
+    font-family: 'Montserrat', sans-serif;
+    background: #111;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 4rem;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: -1;
+  }
+
+  h1 {
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+    font-size: 2.5rem;
+    text-align: center;
+    text-shadow: 0 0 10px crimson;
+  }
+
+  p.subtitle {
+    color: #f0c;
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    text-shadow: 0 0 4px #a50056;
+  }
+
+  input, button {
+    width: 300px;
+    max-width: 90vw;
+    padding: 0.85rem 1rem;
+    font-size: 1.1rem;
+    border-radius: 30px;
+    border: none;
+    outline: none;
+    box-shadow: 0 0 8px #900;
+    transition: box-shadow 0.3s ease;
+    margin: 0.5rem auto;
+    display: block;
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+  }
+
+  input {
+    background: #222;
+    color: #fff;
+    letter-spacing: 2px;
+  }
+  input::placeholder {
+    color: #999;
+  }
+  input:focus {
+    box-shadow: 0 0 15px crimson;
+  }
+
+  button {
+    background: crimson;
+    color: white;
+    cursor: pointer;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+  button:hover {
+    background: #ff1a4a;
+    box-shadow: 0 0 20px #ff1a4a;
+  }
+
+  .gallery {
+    margin-top: 2.5rem;
+    width: 100%;
+    max-width: 1200px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill,minmax(280px,1fr));
+    gap: 1.5rem;
+  }
+
+  .card {
+    position: relative;
+    background: #222;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow:
+      0 0 12px 1px crimson,
+      inset 0 0 25px #720000;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+  }
+  .card:hover {
+    transform: scale(1.07);
+    box-shadow:
+      0 0 25px 3px crimson,
+      inset 0 0 35px #ff0033;
+  }
+
+  .card img {
+    display: block;
+    width: 100%;
+    border-bottom: 3px solid crimson;
+    transition: filter 0.3s ease;
+  }
+  .card:hover img {
+    filter: brightness(1.1);
+  }
+
+  .meta {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+    color: #f0c;
+    text-shadow: 0 0 4px #a50056;
+    letter-spacing: 1px;
+  }
+
+  #loader {
+    margin-top: 3rem;
+    border: 6px solid #333;
+    border-top: 6px solid crimson;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    display: none;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  @keyframes spin {
+    to {transform: rotate(360deg);}
+  }
+</style>
+</head>
+<body>
+  <h1>Ackerman Mikasa</h1>
+  <p class="subtitle">View Full NHentai Galleries Instantly - Enter a nhentai code to explore complete hentai doujinshi collections.</p>
+  <input type="number" id="code" placeholder="Enter nhentai code..." />
+  <button onclick="loadGallery()">Load Gallery</button>
+  <div id="loader"></div>
+  <div class="gallery" id="gallery"></div>
+
+<script>
+  const proxy = 'https://goodproxy.goodproxy.workers.dev/fetch?url=';
+  const typeMap = { j: 'jpg', p: 'png', g: 'gif', w: 'webp' };
+
+  async function fetchWithProxy(url) {
+    const response = await fetch(proxy + encodeURIComponent(url));
+    if (!response.ok) throw new Error('Failed to fetch API');
+    return response.json();
+  }
+
+  async function findWorkingImage(mediaId, index, ext) {
+    const servers = [1,2,3,4].map(i => {
+      const rawUrl = `https://i${i}.nhentai.net/galleries/${mediaId}/${index}.${ext}`;
+      return fetch(proxy + encodeURIComponent(rawUrl), { method: 'HEAD' })
+        .then(res => res.ok ? rawUrl : null)
+        .catch(() => null);
+    });
+    const firstWorking = await Promise.any(servers);
+    return firstWorking || null;
+  }
+
+  async function loadGallery() {
+    const code = document.getElementById('code').value.trim();
+    const galleryDiv = document.getElementById('gallery');
+    const loader = document.getElementById('loader');
+    galleryDiv.innerHTML = '';
+    document.body.style.backgroundImage = ''; // reset bg
+    if (!code) return alert("Enter a valid code!");
+
+    loader.style.display = 'block';
+
+    try {
+      const json = await fetchWithProxy(`https://nhentai.net/api/gallery/${code}`);
+      const mediaId = json.media_id;
+      const pages = json.images.pages;
+
+      // Set first image as body background (blur + dark overlay via CSS)
+      const firstExt = typeMap[pages[0].t] || 'jpg';
+      const firstImageUrl = await findWorkingImage(mediaId, 1, firstExt);
+      if(firstImageUrl) {
+        document.body.style.backgroundImage = `url('${firstImageUrl}')`;
+      }
+
+      // Load all images in parallel, with their URLs
+      const allImagesPromises = pages.map((p, i) => {
+        const ext = typeMap[p.t] || 'jpg';
+        return findWorkingImage(mediaId, i + 1, ext).then(url => ({url, w: p.w, h: p.h, page: i+1}));
+      });
+
+      const allImages = await Promise.all(allImagesPromises);
+
+      // Create cards for all images
+      allImages.forEach(({url, w, h, page}) => {
+        if(!url) return;
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <img src="${url}" alt="Page ${page}" loading="lazy" />
+          <div class="meta">Page ${page} — ${w}×${h}</div>
+        `;
+        galleryDiv.appendChild(card);
+      });
+
+    } catch (err) {
+      alert("Failed to load gallery. Check the code or proxy.");
+      console.error(err);
+    } finally {
+      loader.style.display = 'none';
+    }
+  }
+</script>
+</body>
+  </html>
+  
