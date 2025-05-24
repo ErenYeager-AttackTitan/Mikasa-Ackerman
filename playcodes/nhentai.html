@@ -8,141 +8,122 @@
 <meta name="author" content="ErenRogue" />
 <title>Ackerman Mikasa - View Full NHentai Galleries Instantly</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 
+  /* Reset and base */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
   body {
     margin: 0;
-    font-family: 'Montserrat', sans-serif;
-    background: #111;
-    color: #fff;
+    font-family: 'Inter', sans-serif;
+    background: #121212;
+    color: #ddd;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 2rem 1rem 4rem;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    position: relative;
-  }
-
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.75);
-    z-index: -1;
   }
 
   h1 {
-    margin-bottom: 0.5rem;
-    font-weight: 700;
-    font-size: 2.5rem;
-    text-align: center;
-    text-shadow: 0 0 10px crimson;
-  }
-
-  p.subtitle {
-    color: #f0c;
-    text-align: center;
-    margin-top: 0;
-    margin-bottom: 1.5rem;
     font-weight: 600;
-    text-shadow: 0 0 4px #a50056;
+    font-size: 2.75rem;
+    margin-bottom: 0.25rem;
+    text-align: center;
+    color: #ff5555;
+  }
+  p.subtitle {
+    color: #bbb;
+    font-weight: 500;
+    font-size: 1.1rem;
+    margin-top: 0;
+    margin-bottom: 2rem;
+    text-align: center;
+    max-width: 600px;
   }
 
   input, button {
-    width: 300px;
+    width: 320px;
     max-width: 90vw;
-    padding: 0.85rem 1rem;
+    padding: 0.8rem 1.25rem;
     font-size: 1.1rem;
-    border-radius: 30px;
+    border-radius: 9999px;
     border: none;
     outline: none;
-    box-shadow: 0 0 8px #900;
-    transition: box-shadow 0.3s ease;
-    margin: 0.5rem auto;
-    display: block;
     font-weight: 600;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Inter', sans-serif;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+    display: block;
+    margin: 0.5rem auto;
   }
-
   input {
-    background: #222;
-    color: #fff;
-    letter-spacing: 2px;
+    background: #1e1e1e;
+    color: #eee;
+    letter-spacing: 1.5px;
   }
   input::placeholder {
-    color: #999;
+    color: #888;
   }
   input:focus {
-    box-shadow: 0 0 15px crimson;
+    box-shadow: 0 0 8px 2px #ff6666;
   }
 
   button {
-    background: crimson;
-    color: white;
+    background: #ff5555;
+    color: #fff;
     cursor: pointer;
-    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 2px;
   }
   button:hover {
-    background: #ff1a4a;
-    box-shadow: 0 0 20px #ff1a4a;
+    background: #ff7777;
+    box-shadow: 0 0 12px #ff7777;
   }
 
   .gallery {
-    margin-top: 2.5rem;
+    margin-top: 2rem;
     width: 100%;
-    max-width: 1200px;
+    max-width: 1100px;
     display: grid;
-    grid-template-columns: repeat(auto-fill,minmax(280px,1fr));
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 1.5rem;
   }
 
   .card {
-    position: relative;
-    background: #222;
-    border-radius: 20px;
+    background: #1e1e1e;
+    border-radius: 14px;
     overflow: hidden;
-    box-shadow:
-      0 0 12px 1px crimson,
-      inset 0 0 25px #720000;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.8);
     cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
   .card:hover {
-    transform: scale(1.07);
-    box-shadow:
-      0 0 25px 3px crimson,
-      inset 0 0 35px #ff0033;
+    transform: scale(1.05);
+    box-shadow: 0 10px 20px rgba(255, 85, 85, 0.7);
   }
-
   .card img {
-    display: block;
     width: 100%;
-    border-bottom: 3px solid crimson;
-    transition: filter 0.3s ease;
+    height: auto;
+    display: block;
+    transition: transform 0.3s ease;
   }
   .card:hover img {
-    filter: brightness(1.1);
+    transform: scale(1.07);
   }
 
   .meta {
     padding: 0.75rem 1rem;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     text-align: center;
-    color: #f0c;
-    text-shadow: 0 0 4px #a50056;
-    letter-spacing: 1px;
+    color: #ff7777;
   }
 
   #loader {
     margin-top: 3rem;
     border: 6px solid #333;
-    border-top: 6px solid crimson;
+    border-top: 6px solid #ff5555;
     border-radius: 50%;
     width: 50px;
     height: 50px;
@@ -152,17 +133,65 @@
     margin-right: auto;
   }
   @keyframes spin {
-    to {transform: rotate(360deg);}
+    to { transform: rotate(360deg); }
+  }
+
+  /* Modal styles */
+  #modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right:0;
+    bottom: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    padding: 1rem;
+  }
+  #modal img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 12px;
+    box-shadow: 0 0 30px #ff5555;
+    user-select: none;
+  }
+  #modal .close-btn {
+    position: fixed;
+    top: 1.2rem;
+    right: 1.5rem;
+    background: #ff5555;
+    color: white;
+    font-size: 1.8rem;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    box-shadow: 0 0 10px #ff5555;
+    transition: background-color 0.3s ease;
+  }
+  #modal .close-btn:hover {
+    background: #ff7777;
   }
 </style>
 </head>
 <body>
   <h1>Ackerman Mikasa</h1>
-  <p class="subtitle">View Full NHentai Galleries Instantly - Enter a nhentai code to explore complete hentai doujinshi collections.</p>
+  <p class="subtitle">View full NHentai galleries instantly. Enter a nhentai code to explore complete hentai doujinshi collections.</p>
   <input type="number" id="code" placeholder="Enter nhentai code..." />
   <button onclick="loadGallery()">Load Gallery</button>
+
   <div id="loader"></div>
+
   <div class="gallery" id="gallery"></div>
+
+  <!-- Modal for zoomed image -->
+  <div id="modal" onclick="closeModal(event)">
+    <button class="close-btn" aria-label="Close zoomed image" onclick="closeModal(event)">&times;</button>
+    <img id="modal-img" src="" alt="Zoomed image" />
+  </div>
 
 <script>
   const proxy = 'https://goodproxy.goodproxy.workers.dev/fetch?url=';
@@ -190,8 +219,8 @@
     const galleryDiv = document.getElementById('gallery');
     const loader = document.getElementById('loader');
     galleryDiv.innerHTML = '';
-    document.body.style.backgroundImage = ''; // reset bg
-    if (!code) return alert("Enter a valid code!");
+    document.body.style.backgroundImage = '';
+    if (!code) return alert("Please enter a valid nhentai code.");
 
     loader.style.display = 'block';
 
@@ -200,14 +229,17 @@
       const mediaId = json.media_id;
       const pages = json.images.pages;
 
-      // Set first image as body background (blur + dark overlay via CSS)
+      // Set first image as body background with subtle blur
       const firstExt = typeMap[pages[0].t] || 'jpg';
       const firstImageUrl = await findWorkingImage(mediaId, 1, firstExt);
-      if(firstImageUrl) {
+      if (firstImageUrl) {
         document.body.style.backgroundImage = `url('${firstImageUrl}')`;
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundPosition = 'center';
+        document.body.style.filter = 'blur(8px) brightness(0.4)';
       }
 
-      // Load all images in parallel, with their URLs
+      // Load all images
       const allImagesPromises = pages.map((p, i) => {
         const ext = typeMap[p.t] || 'jpg';
         return findWorkingImage(mediaId, i + 1, ext).then(url => ({url, w: p.w, h: p.h, page: i+1}));
@@ -215,26 +247,50 @@
 
       const allImages = await Promise.all(allImagesPromises);
 
-      // Create cards for all images
       allImages.forEach(({url, w, h, page}) => {
-        if(!url) return;
+        if (!url) return;
         const card = document.createElement('div');
         card.className = 'card';
-        card.innerHTML = `
-          <img src="${url}" alt="Page ${page}" loading="lazy" />
-          <div class="meta">Page ${page} — ${w}×${h}</div>
-        `;
+        card.title = `Page ${page} — ${w}×${h}`;
+        card.innerHTML = `<img src="${url}" alt="Page ${page}" loading="lazy" />`;
+        card.onclick = () => openModal(url, `Page ${page} — ${w}×${h}`);
         galleryDiv.appendChild(card);
       });
-
     } catch (err) {
-      alert("Failed to load gallery. Check the code or proxy.");
+      alert("Failed to load gallery. Please check the code or try again later.");
       console.error(err);
     } finally {
       loader.style.display = 'none';
+      // Remove blur on background so images appear crisp
+      document.body.style.filter = '';
     }
   }
+
+  // Modal functionality
+  const modal = document.getElementById('modal');
+  const modalImg = document.getElementById('modal-img');
+
+  function openModal(src, alt) {
+    modalImg.src = src;
+    modalImg.alt = alt;
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // prevent background scroll
+  }
+
+  function closeModal(event) {
+    if (event.target === modal || event.target.classList.contains('close-btn')) {
+      modal.style.display = 'none';
+      modalImg.src = '';
+      document.body.style.overflow = '';
+    }
+  }
+
+  // Optional: close modal on ESC key
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modal.style.display === 'flex') {
+      closeModal({ target: modal });
+    }
+  });
 </script>
 </body>
-  </html>
-  
+</html>
