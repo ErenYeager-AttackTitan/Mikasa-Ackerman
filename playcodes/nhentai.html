@@ -166,7 +166,7 @@
     }
 
     async function findWorkingImage(mediaId, index, ext) {
-      const servers = [1, 2, 3, 4].map(i => {
+      const servers = [2, 3, 4].map(i => {
         const raw = `https://i${i}.nhentai.net/galleries/${mediaId}/${index}.${ext}`;
         return fetch(proxy + encodeURIComponent(raw), { method: 'HEAD' })
           .then(res => res.ok ? proxy + encodeURIComponent(raw) : null)
