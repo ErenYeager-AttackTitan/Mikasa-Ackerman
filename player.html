@@ -2,171 +2,157 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>IPTV Player with Subtitle, Audio, Quality Control</title>
+  <title>IPTV Player (Tracks + Quality)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
-      background: #111;
+      background: #000;
       color: #fff;
       font-family: sans-serif;
-      padding: 20px;
       text-align: center;
-    }
-    #channelList {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 20px;
-    }
-    .channel {
-      background: #222;
-      padding: 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      width: 150px;
-      transition: 0.2s;
-    }
-    .channel:hover {
-      background: #333;
+      padding: 20px;
     }
     video {
       width: 100%;
-      max-width: 800px;
+      max-width: 720px;
       margin: 20px auto;
       display: block;
-      background: black;
+      background: #000;
     }
-    select {
-      margin: 10px;
-      padding: 5px;
+    select, input, button {
+      margin: 5px;
+      padding: 10px;
       border-radius: 5px;
+      border: none;
+    }
+    .channel {
+      background: #111;
+      padding: 10px;
+      margin: 5px;
+      cursor: pointer;
+      display: inline-block;
+      border-radius: 6px;
+    }
+    .channel:hover {
+      background: #222;
     }
   </style>
 </head>
 <body>
 
-<h1>🎥 IPTV Player</h1>
+<h2>📺 IPTV M3U Player</h2>
 
-<input type="file" id="fileInput" accept=".m3u,.m3u8" />
-<br><br>
-<input type="text" id="urlInput" placeholder="Paste M3U URL" style="width: 80%; max-width: 400px;" />
+<input type="file" id="fileInput" accept=".m3u,.m3u8">
+<br>
+<input type="text" id="urlInput" placeholder="Paste M3U URL" style="width: 70%;" />
 <button onclick="loadFromURL()">Load</button>
 
 <video id="videoPlayer" autoplay muted playsinline></video>
 
-<div>
-  <label for="audioTrack">🎧 Audio:</label>
-  <select id="audioTrack"></select>
-
-  <label for="textTrack">💬 Subtitles:</label>
-  <select id="textTrack"></select>
-</div>
+<br>
+<select id="audioTrackSelect"></select>
+<select id="textTrackSelect"></select>
 
 <div id="channelList"></div>
 
 <script>
-  const video = document.getElementById('videoPlayer');
-  const audioTrackSelect = document.getElementById('audioTrack');
-  const textTrackSelect = document.getElementById('textTrack');
-  const channelList = document.getElementById("channelList");
+const video = document.getElementById('videoPlayer');
+const audioTrackSelect = document.getElementById('audioTrackSelect');
+const textTrackSelect = document.getElementById('textTrackSelect');
+const channelList = document.getElementById('channelList');
 
-  document.getElementById("fileInput").addEventListener("change", function () {
-    const file = this.files[0];
-    const reader = new FileReader();
-    reader.onload = e => parseM3U(e.target.result);
-    reader.readAsText(file);
+document.getElementById('fileInput').addEventListener('change', e => {
+  const reader = new FileReader();
+  reader.onload = event => parseM3U(event.target.result);
+  reader.readAsText(e.target.files[0]);
+});
+
+function loadFromURL() {
+  const url = document.getElementById('urlInput').value;
+  if (!url.startsWith('http')) return alert('Enter a valid URL');
+  fetch(url)
+    .then(res => res.text())
+    .then(data => parseM3U(data))
+    .catch(err => alert('Failed to fetch M3U'));
+}
+
+function parseM3U(data) {
+  const lines = data.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const channels = [];
+
+  for (let i = 0; i < lines.length - 1; i++) {
+    if (lines[i].startsWith('#EXTINF')) {
+      const name = lines[i].split(',').pop().trim();
+      const logoMatch = lines[i].match(/tvg-logo="([^"]+)"/);
+      const logo = logoMatch ? logoMatch[1] : '';
+      const url = lines[i + 1].trim();
+      if (url.startsWith('http')) {
+        channels.push({ name, logo, url });
+      }
+    }
+  }
+
+  if (!channels.length) {
+    alert('No valid streams found');
+    return;
+  }
+
+  channelList.innerHTML = '';
+  channels.forEach(channel => {
+    const div = document.createElement('div');
+    div.className = 'channel';
+    div.textContent = channel.name;
+    div.onclick = () => playStream(channel.url);
+    channelList.appendChild(div);
   });
 
-  function loadFromURL() {
-    const url = document.getElementById("urlInput").value;
-    fetch(url)
-      .then(res => res.text())
-      .then(parseM3U)
-      .catch(err => alert("Failed to load playlist."));
+  playStream(channels[0].url);
+}
+
+function playStream(url) {
+  video.pause();
+  video.innerHTML = '';
+  video.src = url;
+  video.load();
+  video.play();
+
+  setTimeout(updateTracks, 2000); // wait for video metadata
+}
+
+function updateTracks() {
+  // Audio tracks
+  audioTrackSelect.innerHTML = '';
+  const audioTracks = video.audioTracks || [];
+  for (let i = 0; i < audioTracks.length; i++) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = audioTracks[i].label || `Audio ${i+1}`;
+    audioTrackSelect.appendChild(opt);
   }
-
-  function parseM3U(data) {
-    channelList.innerHTML = "";
-    const lines = data.split("\n");
-    const channels = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].startsWith("#EXTINF")) {
-        const name = lines[i].split(",")[1]?.trim() || "Unknown";
-        const logoMatch = lines[i].match(/tvg-logo="([^"]+)"/);
-        const logo = logoMatch ? logoMatch[1] : "";
-        const url = lines[i + 1]?.trim();
-        if (url && url.startsWith("http")) {
-          channels.push({ name, logo, url });
-        }
-      }
-    }
-
-    if (channels.length === 0) {
-      alert("No valid channels found.");
-      return;
-    }
-
-    channels.forEach(channel => {
-      const div = document.createElement("div");
-      div.className = "channel";
-      div.textContent = channel.name;
-      div.onclick = () => loadChannel(channel.url);
-      channelList.appendChild(div);
-    });
-
-    loadChannel(channels[0].url);
-  }
-
-  function loadChannel(url) {
-    video.innerHTML = ""; // Clear previous tracks
-    video.src = url;
-    video.load();
-    video.play();
-
-    setTimeout(() => {
-      loadTracks();
-    }, 2000);
-  }
-
-  function loadTracks() {
-    // Audio tracks
-    audioTrackSelect.innerHTML = "";
-    const audioTracks = video.audioTracks || [];
+  audioTrackSelect.onchange = () => {
     for (let i = 0; i < audioTracks.length; i++) {
-      const option = document.createElement("option");
-      option.value = i;
-      option.textContent = audioTracks[i].label || `Track ${i+1}`;
-      audioTrackSelect.appendChild(option);
+      audioTracks[i].enabled = i == audioTrackSelect.value;
     }
+  };
 
-    audioTrackSelect.onchange = () => {
-      for (let i = 0; i < audioTracks.length; i++) {
-        audioTracks[i].enabled = i == audioTrackSelect.value;
-      }
-    };
-
-    // Subtitle tracks
-    textTrackSelect.innerHTML = "";
-    const textTracks = video.textTracks || [];
-    for (let i = 0; i < textTracks.length; i++) {
-      const option = document.createElement("option");
-      option.value = i;
-      option.textContent = textTracks[i].label || `Subtitle ${i+1}`;
-      textTrackSelect.appendChild(option);
-    }
-
-    textTrackSelect.onchange = () => {
-      for (let i = 0; i < textTracks.length; i++) {
-        textTracks[i].mode = "disabled";
-      }
-      const selected = textTracks[textTrackSelect.value];
-      if (selected) selected.mode = "showing";
-    };
+  // Subtitle tracks
+  textTrackSelect.innerHTML = '';
+  const textTracks = video.textTracks || [];
+  for (let i = 0; i < textTracks.length; i++) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = textTracks[i].label || `Subtitle ${i+1}`;
+    textTrackSelect.appendChild(opt);
   }
+  textTrackSelect.onchange = () => {
+    for (let i = 0; i < textTracks.length; i++) {
+      textTracks[i].mode = 'disabled';
+    }
+    const selected = textTracks[textTrackSelect.value];
+    if (selected) selected.mode = 'showing';
+  };
+}
 </script>
 
 </body>
 </html>
-  
