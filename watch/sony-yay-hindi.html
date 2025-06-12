@@ -1,18 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <script src="https://cdn.jwplayer.com/libraries/aVr2lJgW.js"></script>
+  <title>Video.js with MP4 Ads</title>
+  <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet" />
+  <style>
+    .video-js { width: 100%; max-width: 800px; margin: 0 auto; }
+  </style>
 </head>
 <body>
-  <div id="player"></div>
-  <script>
-    jwplayer("player").setup({
-      file: "https://pubads.g.doubleclick.net/ssai/event/40H5HfwWTZadFGYkBTqagg/master.m3u8",
-      type: "hls",
-      autostart: true,
-      width: "100%",
-      aspectratio: "16:9"
-    });
-  </script>
+
+<video
+  id="player"
+  class="video-js vjs-default-skin vjs-big-play-centered"
+  controls
+  autoplay
+  playsinline
+></video>
+
+<!-- Scripts -->
+<script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/videojs-contrib-quality-levels@2.1.0/dist/videojs-contrib-quality-levels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@1.1.3/dist/videojs-hls-quality-selector.min.js"></script>
+<script src="https://imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/videojs-ima@1.10.1/dist/videojs.ima.min.js"></script>
+
+<script>
+  const player = videojs('player', {
+    sources: [{
+      src: 'https://pubads.g.doubleclick.net/ssai/event/40H5HfwWTZadFGYkBTqagg/master.m3u8',
+      type: 'application/x-mpegURL'
+    }],
+    html5: { vhs: { enableLowInitialPlaylist: true } }
+  });
+
+  // Add quality selector
+  player.hlsQualitySelector({ displayCurrentQuality: true });
+
+  // Add VAST ad (with MP4 inside)
+  player.ima({
+    adTagUrl: '', // this XML contains the MP4 ad
+    debug: true
+  });
+
+  // Auto-start ad on load
+  player.ready(() => {
+    player.ima.initializeAdDisplayContainer();
+    player.ima.requestAds();
+  });
+</script>
+
 </body>
 </html>
