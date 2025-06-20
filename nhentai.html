@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>nHentai API Documentation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      padding: 2rem;
+      color: #333;
+    }
+    h1 {
+      color: #cc0000;
+    }
+    code {
+      background: #eee;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .section {
+      margin-bottom: 2rem;
+    }
+    .section h2 {
+      color: #b30000;
+    }
+    ul {
+      margin-top: 0.5rem;
+      padding-left: 1.5rem;
+    }
+    li {
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>nHentai API Documentation</h1>
+  <div id="content">Loading...</div>
+
+  <script>
+    fetch('https://mikasa-ackerman-cdn.pages.dev/nhentai.json')
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('content');
+        container.innerHTML = '';
+
+        function createSection(title, obj) {
+          const section = document.createElement('div');
+          section.className = 'section';
+          const h2 = document.createElement('h2');
+          h2.textContent = title;
+          section.appendChild(h2);
+          const ul = document.createElement('ul');
+          for (const key in obj) {
+            const li = document.createElement('li');
+            li.innerHTML = `<strong>${key}:</strong> <code>${obj[key]}</code>`;
+            ul.appendChild(li);
+          }
+          section.appendChild(ul);
+          container.appendChild(section);
+        }
+
+        createSection("📦 API Endpoints", data.api);
+        createSection("🖼️ Image URLs", data.images);
+        createSection("🧭 Sort Modes", { sort_modes: data.sort_modes.join(', ') });
+      })
+      .catch(err => {
+        document.getElementById('content').innerText = 'Failed to load JSON: ' + err;
+      });
+  </script>
+</body>
+</html>
