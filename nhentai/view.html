@@ -2,44 +2,71 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>View Gallery</title>
+  <title>View Doujin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans p-6">
-  <div class="max-w-3xl mx-auto">
-    <h1 id="title" class="text-2xl font-bold text-red-600 mb-4">Gallery</h1>
-    <img id="cover" class="rounded-lg shadow mb-4 max-w-full" />
-    <div id="info"></div>
-    <div id="pages" class="grid grid-cols-2 gap-4 mt-6"></div>
+  <div class="max-w-5xl mx-auto">
+    <h1 id="title" class="text-3xl font-bold text-red-600 mb-6">Loading...</h1>
+    <img id="cover" class="rounded shadow-md mb-4 max-w-xs" />
+    <div id="info" class="mb-6 text-sm text-gray-600"></div>
+
+    <h2 class="text-2xl font-semibold mb-4">📄 Pages</h2>
+    <div id="pages" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
   </div>
 
   <script>
-    const params = new URLSearchParams(location.search);
-    const id = params.get('id');
+    const id = new URLSearchParams(location.search).get('id');
+    const apiURL = `https://nhentai.net/api/gallery/${id}`;
+    const typeMap = { j: 'jpg', p: 'png', g: 'gif', w: 'webp' };
 
-    fetch(`https://nhentai.net/api/gallery/${id}`)
+    fetch(apiURL)
       .then(res => res.json())
       .then(data => {
-        document.getElementById('title').textContent = data.title.english || 'No Title';
-        document.getElementById('cover').src = `https://i.nhentai.net/galleries/${data.media_id}/cover.jpg`;
+        const { media_id, title, images, tags, num_pages, upload_date, num_favorites } = data;
 
-        const info = document.getElementById('info');
+        document.getElementById("title").textContent = title.english || title.pretty || 'Untitled';
+
+        const coverExt = typeMap[images.cover.t] || 'jpg';
+        document.getElementById("cover").src = `https://i.nhentai.net/galleries/${media_id}/cover.${coverExt}`;
+
+        const info = document.getElementById("info");
+        const tagTypes = {};
+        tags.forEach(t => {
+          if (!tagTypes[t.type]) tagTypes[t.type] = [];
+          tagTypes[t.type].push(t.name);
+        });
+
+        const formatCount = {};
+        images.pages.forEach(p => {
+          const ext = typeMap[p.t] || 'jpg';
+          formatCount[ext] = (formatCount[ext] || 0) + 1;
+        });
+
         info.innerHTML = `
           <p><strong>ID:</strong> ${data.id}</p>
-          <p><strong>Pages:</strong> ${data.images.pages.length}</p>
-          <p><strong>Tags:</strong> ${data.tags.map(t => t.name).join(', ')}</p>
+          <p><strong>Media ID:</strong> ${media_id}</p>
+          <p><strong>Pages:</strong> ${num_pages}</p>
+          <p><strong>Favorites:</strong> ${num_favorites}</p>
+          <p><strong>Uploaded:</strong> ${new Date(upload_date * 1000).toLocaleString()}</p>
+          <p><strong>Formats:</strong> ${Object.entries(formatCount).map(([k, v]) => `${v} ${k}`).join(', ')}</p>
+          ${Object.entries(tagTypes).map(([type, values]) => `<p><strong>${type}:</strong> ${values.join(', ')}</p>`).join('')}
         `;
 
-        const pages = document.getElementById('pages');
-        data.images.pages.forEach((_, i) => {
-          const img = document.createElement('img');
-          img.src = `https://i.nhentai.net/galleries/${data.media_id}/${i + 1}.jpg`;
-          img.className = 'rounded shadow';
-          pages.appendChild(img);
+        const pages = document.getElementById("pages");
+        images.pages.forEach((img, i) => {
+          const ext = typeMap[img.t] || 'jpg';
+          const image = document.createElement("img");
+          image.src = `https://i.nhentai.net/galleries/${media_id}/${i + 1}.${ext}`;
+          image.className = "w-full rounded shadow";
+          image.loading = "lazy";
+          pages.appendChild(image);
         });
+      })
+      .catch(() => {
+        document.getElementById("title").textContent = "Failed to load doujin.";
       });
   </script>
 </body>
-  </html>
-  
+</html>
