@@ -3,245 +3,67 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ackerman Mikasa - View nhentai Galleries</title>
-  <meta name="description" content="View full nhentai galleries using gallery codes." />
-  <meta name="author" content="ErenRogue" />
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <title>nHentai Redirect Checker</title>
   <style>
     body {
-      margin: 0;
-      font-family: 'Montserrat', sans-serif;
-      background: #111;
+      font-family: Arial, sans-serif;
+      background-color: #111;
       color: #fff;
-      padding: 2rem 1rem 4rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-    }
-
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-      text-align: center;
-      color: crimson;
-      text-shadow: 0 0 8px #900;
-    }
-
-    input, button {
-      width: 300px;
-      max-width: 90%;
-      padding: 0.85rem 1rem;
-      font-size: 1.1rem;
-      border-radius: 30px;
-      border: none;
-      outline: none;
-      margin: 0.5rem auto;
-      display: block;
-      font-family: 'Montserrat', sans-serif;
-    }
-
-    input {
-      background: #222;
-      color: #fff;
-      box-shadow: 0 0 6px #900;
-    }
-
-    input::placeholder {
-      color: #aaa;
-    }
-
-    input:focus {
-      box-shadow: 0 0 10px crimson;
-    }
-
-    button {
-      background: crimson;
-      color: white;
-      font-weight: 700;
-      cursor: pointer;
-      text-transform: uppercase;
-      box-shadow: 0 0 8px #900;
-    }
-
-    button:hover {
-      background: #ff1a4a;
-      box-shadow: 0 0 15px #ff1a4a;
-    }
-
-    .gallery {
-      margin-top: 2rem;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 1rem;
-      width: 100%;
-      max-width: 1200px;
-    }
-
-    .card {
-      background: #1e1e1e;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
-      transition: transform 0.3s ease;
-    }
-
-    .card:hover {
-      transform: scale(1.05);
-    }
-
-    .card img {
-      width: 100%;
-      display: block;
-      border-bottom: 2px solid crimson;
-      cursor: zoom-in;
-    }
-
-    .meta {
-      text-align: center;
-      padding: 0.75rem;
-      font-weight: 600;
-      color: #f0c;
-      text-shadow: 0 0 5px #900;
-    }
-
-    #loader {
-      margin-top: 2rem;
-      border: 6px solid #333;
-      border-top: 6px solid crimson;
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      animation: spin 1s linear infinite;
-      display: none;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      inset: 0;
-      background-color: rgba(0,0,0,0.85);
       justify-content: center;
-      align-items: center;
+      height: 100vh;
+      padding: 20px;
     }
-
-    .modal img {
-      max-width: 95%;
-      max-height: 90vh;
-      border-radius: 10px;
-      box-shadow: 0 0 15px crimson;
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+    }
+    input {
+      width: 200px;
+    }
+    button {
+      background-color: crimson;
+      color: white;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
-  <h1>Ackerman Mikasa - nhentai Viewer</h1>
-  <input type="number" id="code" placeholder="Enter nhentai code..." />
-  <button onclick="loadGallery()">Load Gallery</button>
-  <button id="download-btn" onclick="downloadZip()" style="display:none;">📦 Download All Pages</button>
-  <div id="loader"></div>
-  <div class="gallery" id="gallery"></div>
-
-  <div class="modal" id="modal" onclick="this.style.display='none'">
-    <img id="modal-img" src="" alt="Zoomed image" />
-  </div>
+  <h1>Enter Gallery ID</h1>
+  <input type="text" id="galleryId" placeholder="e.g., 177013" />
+  <button onclick="checkAndRedirect()">Go</button>
+  <div id="status"></div>
 
   <script>
-    const proxy = 'https://goodproxy.eren-yeager-founding-titan-9.workers.dev/fetch?url=';
-    const typeMap = { j: 'jpg', p: 'png', g: 'gif', w: 'webp' };
-    let downloadedImages = [];
+    async function checkAndRedirect() {
+      const id = document.getElementById("galleryId").value.trim();
+      const status = document.getElementById("status");
+      if (!id) return status.textContent = "Please enter an ID.";
 
-    async function fetchWithProxy(url) {
-      const res = await fetch(proxy + encodeURIComponent(url));
-      if (!res.ok) throw new Error("Gallery not found");
-      return res.json();
-    }
+      const imageUrl = `https://i.nhentai.net/galleries/${id}/1.jpg`;
 
-    async function findWorkingImage(mediaId, index, ext) {
-      const urls = [2, 3, 4].map(i =>
-        `https://i${i}.nhentai.net/galleries/${mediaId}/${index}.${ext}`
-      );
-      for (const raw of urls) {
-        try {
-          const head = await fetch(proxy + encodeURIComponent(raw), { method: 'HEAD' });
-          if (head.ok) return proxy + encodeURIComponent(raw);
-        } catch (_) {}
-      }
-      return null;
-    }
-
-    async function loadGallery() {
-      const code = document.getElementById('code').value.trim();
-      const galleryDiv = document.getElementById('gallery');
-      const loader = document.getElementById('loader');
-      downloadedImages = [];
-      document.getElementById('download-btn').style.display = 'none';
-      galleryDiv.innerHTML = '';
-      if (!code) return alert("Enter a code.");
-
-      loader.style.display = 'block';
+      status.textContent = "Checking...";
 
       try {
-        const json = await fetchWithProxy(`https://nhentai.net/api/gallery/${code}`);
-        const mediaId = json.media_id;
-        const pages = json.images.pages;
-
-        const imagePromises = pages.map((p, i) => {
-          const ext = typeMap[p.t] || 'jpg';
-          return findWorkingImage(mediaId, i + 1, ext).then(url => ({
-            url, w: p.w, h: p.h, page: i + 1, ext
-          }));
-        });
-
-        const images = await Promise.all(imagePromises);
-        downloadedImages = images.filter(i => i?.url);
-        if (downloadedImages.length) document.getElementById('download-btn').style.display = 'block';
-
-        images.forEach(({ url, w, h, page }) => {
-          if (!url) return;
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML = `
-            <img src="${url}" loading="lazy" alt="Page ${page}" onclick="zoomImage('${url}')" />
-            <div class="meta">Page ${page} — ${w}×${h}</div>
-          `;
-          galleryDiv.appendChild(card);
-        });
+        const res = await fetch(imageUrl, { method: 'HEAD' });
+        if (res.ok) {
+          window.location.href = `https://ackerman-mikasa.pages.dev/nhentai/view?id=${id}`;
+        } else {
+          status.textContent = "Gallery does not exist or is unavailable.";
+        }
       } catch (err) {
-        alert("Error loading gallery. Check the code.");
+        status.textContent = "Error checking gallery.";
         console.error(err);
-      } finally {
-        loader.style.display = 'none';
       }
-    }
-
-    function zoomImage(url) {
-      const modal = document.getElementById('modal');
-      const modalImg = document.getElementById('modal-img');
-      modalImg.src = url;
-      modal.style.display = 'flex';
-    }
-
-    async function downloadZip() {
-      if (!downloadedImages.length) return alert("No images to download.");
-      const zip = new JSZip();
-      const folder = zip.folder("nhentai_gallery");
-
-      for (let i = 0; i < downloadedImages.length; i++) {
-        const { url, page, ext } = downloadedImages[i];
-        const response = await fetch(url);
-        const blob = await response.blob();
-        folder.file(`page-${String(page).padStart(3, '0')}.${ext}`, blob);
-      }
-
-      zip.generateAsync({ type: "blob" }).then(content => {
-        saveAs(content, "nhentai_gallery.zip");
-      });
     }
   </script>
 </body>
