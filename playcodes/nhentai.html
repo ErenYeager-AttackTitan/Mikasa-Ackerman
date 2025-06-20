@@ -49,19 +49,22 @@
       const status = document.getElementById("status");
       if (!id) return status.textContent = "Please enter an ID.";
 
-      const imageUrl = `https://i.nhentai.net/galleries/${id}/1.jpg`;
-
+      const apiUrl = `https://nhentai.net/api/gallery/${id}`;
       status.textContent = "Checking...";
 
       try {
-        const res = await fetch(imageUrl, { method: 'HEAD' });
-        if (res.ok) {
+        const res = await fetch(apiUrl);
+        if (!res.ok) throw new Error("Not found");
+
+        const data = await res.json();
+
+        if (data.media_id) {
           window.location.href = `https://ackerman-mikasa.pages.dev/nhentai/view?id=${id}`;
         } else {
-          status.textContent = "Gallery does not exist or is unavailable.";
+          status.textContent = "Gallery not found.";
         }
       } catch (err) {
-        status.textContent = "Error checking gallery.";
+        status.textContent = "Gallery not found or API error.";
         console.error(err);
       }
     }
