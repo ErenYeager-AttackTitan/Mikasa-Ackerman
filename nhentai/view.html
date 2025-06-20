@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>View Gallery</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans p-6">
+  <div class="max-w-3xl mx-auto">
+    <h1 id="title" class="text-2xl font-bold text-red-600 mb-4">Gallery</h1>
+    <img id="cover" class="rounded-lg shadow mb-4 max-w-full" />
+    <div id="info"></div>
+    <div id="pages" class="grid grid-cols-2 gap-4 mt-6"></div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+
+    fetch(`https://nhentai.net/api/gallery/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('title').textContent = data.title.english || 'No Title';
+        document.getElementById('cover').src = `https://i.nhentai.net/galleries/${data.media_id}/cover.jpg`;
+
+        const info = document.getElementById('info');
+        info.innerHTML = `
+          <p><strong>ID:</strong> ${data.id}</p>
+          <p><strong>Pages:</strong> ${data.images.pages.length}</p>
+          <p><strong>Tags:</strong> ${data.tags.map(t => t.name).join(', ')}</p>
+        `;
+
+        const pages = document.getElementById('pages');
+        data.images.pages.forEach((_, i) => {
+          const img = document.createElement('img');
+          img.src = `https://i.nhentai.net/galleries/${data.media_id}/${i + 1}.jpg`;
+          img.className = 'rounded shadow';
+          pages.appendChild(img);
+        });
+      });
+  </script>
+</body>
+  </html>
+  
