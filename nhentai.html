@@ -1,29 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>nHentai API Docs with Meme Loader</title>
+  <meta charset="UTF-8" />
+  <title>nHentai API Documentation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
-    #meme-box img {
-      max-width: 100%;
-      border-radius: 1rem;
-      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+    .code-box {
+      background: #e2e8f0;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      word-break: break-all;
     }
   </style>
 </head>
-<body class="bg-gray-100 text-gray-800 min-h-screen">
+<body class="min-h-screen flex flex-col items-center justify-start p-4 md:p-10">
 
-  <!-- Loading Meme -->
-  <div id="meme-box" class="text-center py-10">
-    <h1 class="text-2xl font-semibold text-red-600 mb-4">Loading... Enjoy a Meme!</h1>
-    <img id="meme-img" class="mx-auto max-w-xl" alt="Anime Meme" />
-    <p id="meme-desc" class="mt-4 text-gray-700 italic"></p>
+  <!-- Meme Loader -->
+  <div id="meme-box" class="w-full max-w-2xl text-center animate-fadeIn">
+    <h1 class="text-2xl md:text-3xl font-bold text-blue-600 mb-4">Loading... Here's a Meme 😄</h1>
+    <img id="meme-img" class="rounded-lg shadow-lg max-w-full mx-auto mb-3" alt="Anime Meme" />
+    <p id="meme-desc" class="text-gray-700 text-sm md:text-base italic"></p>
   </div>
 
-  <!-- Main Documentation -->
-  <div id="main-content" class="hidden max-w-4xl mx-auto p-6 space-y-8">
-    <h1 class="text-4xl font-bold text-red-700 mb-6">nHentai API Documentation</h1>
+  <!-- Main Content -->
+  <div id="main-content" class="hidden max-w-4xl w-full mt-10 space-y-10">
+    <h1 class="text-3xl font-bold text-blue-700 mb-6">📘 nHentai API Documentation</h1>
+
     <div id="api-section"></div>
     <div id="image-section"></div>
     <div id="sort-section"></div>
@@ -31,50 +41,51 @@
 
   <script>
     (async () => {
-      const memeBox = document.getElementById("meme-box");
       const memeImg = document.getElementById("meme-img");
       const memeDesc = document.getElementById("meme-desc");
+      const proxy = "https://goodproxy.eren-yeager-founding-titan-9.workers.dev/fetch?url=";
 
       try {
-        const res = await fetch("https://api.apileague.com/retrieve-random-meme?keywords=anime&api-key=911db6c959b2487098eb91f5fc4ab78d");
-        const meme = await res.json();
-        memeImg.src = meme.url;
-        memeDesc.textContent = meme.description || "Funny anime meme!";
-      } catch (err) {
-        memeDesc.textContent = "Couldn't load meme.";
+        const memeRes = await fetch("https://api.apileague.com/retrieve-random-meme?keywords=anime&api-key=911db6c959b2487098eb91f5fc4ab78d");
+        const meme = await memeRes.json();
+        memeImg.src = proxy + encodeURIComponent(meme.url);
+        memeDesc.textContent = meme.description || "Anime meme loaded.";
+      } catch (e) {
+        memeDesc.textContent = "Failed to load meme.";
       }
 
       setTimeout(async () => {
-        // Hide meme, show main content
-        memeBox.style.display = "none";
+        document.getElementById("meme-box").classList.add("hidden");
         document.getElementById("main-content").classList.remove("hidden");
 
         try {
-          const res = await fetch("https://mikasa-ackerman-cdn.pages.dev/nhentai.json");
-          const data = await res.json();
+          const docRes = await fetch("https://mikasa-ackerman-cdn.pages.dev/nhentai.json");
+          const data = await docRes.json();
 
-          const createSection = (title, object, containerId) => {
-            const section = document.getElementById(containerId);
-            section.innerHTML = `<h2 class="text-2xl font-semibold text-red-600 mb-2">${title}</h2>`;
-            const ul = document.createElement('ul');
-            ul.className = "space-y-2";
-            for (const key in object) {
-              const value = Array.isArray(object[key]) ? object[key].join(', ') : object[key];
-              const li = document.createElement('li');
-              li.innerHTML = `<span class="font-medium">${key}:</span> <code class="bg-gray-200 px-2 py-1 rounded inline-block">${value}</code>`;
-              ul.appendChild(li);
+          const createSection = (title, items, containerId) => {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<h2 class="text-xl font-semibold text-blue-600 mb-2">${title}</h2>`;
+            const list = document.createElement("ul");
+            list.className = "space-y-2";
+            for (const key in items) {
+              const value = Array.isArray(items[key]) ? items[key].join(", ") : items[key];
+              const li = document.createElement("li");
+              li.innerHTML = `<div><span class="font-medium">${key}</span>: <div class="code-box mt-1">${value}</div></div>`;
+              list.appendChild(li);
             }
-            section.appendChild(ul);
+            container.appendChild(list);
           };
 
           createSection("📦 API Endpoints", data.api, "api-section");
           createSection("🖼️ Image URLs", data.images, "image-section");
           createSection("🧭 Sort Modes", { sort_modes: data.sort_modes }, "sort-section");
+
         } catch (e) {
-          document.getElementById("main-content").innerHTML = "<p class='text-red-600'>Failed to load API JSON.</p>";
+          document.getElementById("main-content").innerHTML = `<p class="text-red-600">❌ Failed to load API docs.</p>`;
         }
-      }, 4000); // wait 4s
+      }, 4000);
     })();
   </script>
 </body>
-</html>
+                                                                                              </html>
+                                                                                              
