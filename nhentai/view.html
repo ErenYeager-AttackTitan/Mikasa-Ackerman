@@ -219,7 +219,7 @@
     async function downloadZip() {
       if (!downloadedImages.length) return alert("No images to download.");
       const zip = new JSZip();
-      const folder = zip.folder("nhentai_gallery");
+      const folder = zip.folder(id);
 
       for (let i = 0; i < downloadedImages.length; i++) {
         const { url, page, ext } = downloadedImages[i];
@@ -229,7 +229,7 @@
       }
 
       zip.generateAsync({ type: "blob" }).then(content => {
-        saveAs(content, "nhentai_gallery.zip");
+        saveAs(content, `${id}_gallery.zip`);
       });
     }
 
