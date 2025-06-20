@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ackerman Mikasa - View nhentai Galleries</title>
+  <title>Ackerman Mikasa - nhentai Viewer</title>
   <meta name="description" content="View full nhentai galleries using gallery codes." />
   <meta name="author" content="ErenRogue" />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet" />
@@ -133,9 +133,10 @@
   </div>
 
   <script>
-    const proxy = 'https://ik.imagekit.io/ani1/';
+    const apiProxy = 'https://goodproxy.eren-yeager-founding-titan-9.workers.dev/fetch?url=';
     const typeMap = { j: 'jpg', p: 'png', g: 'gif', w: 'webp' };
     let downloadedImages = [];
+    let galleryId = null;
 
     function getQueryParam(param) {
       const urlParams = new URLSearchParams(window.location.search);
@@ -143,7 +144,7 @@
     }
 
     async function fetchWithProxy(url) {
-      const res = await fetch(proxy + encodeURIComponent(url));
+      const res = await fetch(apiProxy + encodeURIComponent(url));
       if (!res.ok) throw new Error("Gallery not found");
       return res.json();
     }
@@ -154,8 +155,8 @@
       );
       for (const raw of urls) {
         try {
-          const head = await fetch(proxy + encodeURIComponent(raw), { method: 'HEAD' });
-          if (head.ok) return proxy + encodeURIComponent(raw);
+          const head = await fetch(apiProxy + encodeURIComponent(raw), { method: 'HEAD' });
+          if (head.ok) return apiProxy + encodeURIComponent(raw);
         } catch (_) {}
       }
       return null;
@@ -219,7 +220,7 @@
     async function downloadZip() {
       if (!downloadedImages.length) return alert("No images to download.");
       const zip = new JSZip();
-      const folder = zip.folder(id);
+      const folder = zip.folder(galleryId || "gallery");
 
       for (let i = 0; i < downloadedImages.length; i++) {
         const { url, page, ext } = downloadedImages[i];
@@ -229,14 +230,14 @@
       }
 
       zip.generateAsync({ type: "blob" }).then(content => {
-        saveAs(content, `${id}_gallery.zip`);
+        saveAs(content, `${galleryId || 'gallery'}.zip`);
       });
     }
 
-    // Self-invoking on page load
+    // Auto-load on page load
     (function () {
-      const id = getQueryParam('id');
-      loadGalleryFromId(id);
+      galleryId = getQueryParam('id');
+      loadGalleryFromId(galleryId);
     })();
   </script>
 </body>
