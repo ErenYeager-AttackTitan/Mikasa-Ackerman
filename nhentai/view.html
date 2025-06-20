@@ -3,18 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ackerman Mikasa - nhentai Viewer</title>
-  <meta name="description" content="View full nhentai galleries using gallery codes." />
+  <title>Gallery Viewer - Ackerman Mikasa</title>
+  <meta name="description" content="View and download nhentai galleries by code." />
   <meta name="author" content="ErenRogue" />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
+    :root {
+      --bg: #0d0d0f;
+      --accent: #e50914;
+      --text: #f0f0f0;
+      --muted: #aaa;
+      --card: #1a1a1f;
+      --shadow: 0 0 10px rgba(229, 9, 20, 0.6);
+    }
+
     body {
       margin: 0;
       font-family: 'Montserrat', sans-serif;
-      background: #111;
-      color: #fff;
+      background: var(--bg);
+      color: var(--text);
       padding: 2rem 1rem 4rem;
       display: flex;
       flex-direction: column;
@@ -22,77 +31,87 @@
     }
 
     h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
+      font-size: 2.8rem;
+      margin-bottom: 0.5rem;
       text-align: center;
-      color: crimson;
-      text-shadow: 0 0 8px #900;
+      color: var(--accent);
+      text-shadow: var(--shadow);
+      letter-spacing: 1px;
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 400;
+      color: var(--muted);
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+      text-align: center;
     }
 
     button {
-      width: 300px;
+      width: 280px;
       max-width: 90%;
       padding: 0.85rem 1rem;
-      font-size: 1.1rem;
+      font-size: 1rem;
       border-radius: 30px;
       border: none;
       outline: none;
       margin: 0.5rem auto;
       display: block;
       font-family: 'Montserrat', sans-serif;
-      background: crimson;
+      background: var(--accent);
       color: white;
       font-weight: 700;
       cursor: pointer;
       text-transform: uppercase;
-      box-shadow: 0 0 8px #900;
+      box-shadow: var(--shadow);
     }
 
     button:hover {
-      background: #ff1a4a;
-      box-shadow: 0 0 15px #ff1a4a;
+      background: #ff1f29;
+      box-shadow: 0 0 15px #ff1f29;
     }
 
     .gallery {
       margin-top: 2rem;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
       gap: 1rem;
       width: 100%;
-      max-width: 1200px;
+      max-width: 1300px;
     }
 
     .card {
-      background: #1e1e1e;
-      border-radius: 16px;
+      background: var(--card);
+      border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
-      transition: transform 0.3s ease;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      transition: transform 0.25s ease;
     }
 
     .card:hover {
-      transform: scale(1.05);
+      transform: scale(1.03);
     }
 
     .card img {
       width: 100%;
       display: block;
-      border-bottom: 2px solid crimson;
+      border-bottom: 2px solid var(--accent);
       cursor: zoom-in;
     }
 
     .meta {
       text-align: center;
-      padding: 0.75rem;
+      padding: 0.6rem;
       font-weight: 600;
-      color: #f0c;
-      text-shadow: 0 0 5px #900;
+      color: var(--muted);
+      font-size: 0.9rem;
     }
 
     #loader {
       margin-top: 2rem;
-      border: 6px solid #333;
-      border-top: 6px solid crimson;
+      border: 6px solid #222;
+      border-top: 6px solid var(--accent);
       border-radius: 50%;
       width: 50px;
       height: 50px;
@@ -118,13 +137,43 @@
       max-width: 95%;
       max-height: 90vh;
       border-radius: 10px;
-      box-shadow: 0 0 15px crimson;
+      box-shadow: var(--shadow);
+    }
+
+    #progress {
+      width: 90%;
+      height: 16px;
+      margin: 1rem 0 0.2rem;
+      display: none;
+      appearance: none;
+    }
+
+    #progress::-webkit-progress-bar {
+      background-color: #333;
+      border-radius: 20px;
+    }
+
+    #progress::-webkit-progress-value {
+      background-color: var(--accent);
+      border-radius: 20px;
+    }
+
+    #progress-text {
+      text-align: center;
+      color: var(--muted);
+      font-weight: 600;
+      display: none;
     }
   </style>
 </head>
 <body>
-  <h1>Ackerman Mikasa - nhentai Viewer</h1>
+  <h1>Gallery Viewer</h1>
+  <h2>Ackerman Mikasa — nhentai Mirror</h2>
+
   <button id="download-btn" onclick="downloadZip()" style="display:none;">📦 Download All Pages</button>
+  <progress id="progress" value="0" max="100"></progress>
+  <div id="progress-text"></div>
+
   <div id="loader"></div>
   <div class="gallery" id="gallery"></div>
 
@@ -133,7 +182,7 @@
   </div>
 
   <script>
-    const apiProxy = 'https://goodproxy.eren-yeager-founding-titan-9.workers.dev/fetch?url=';
+    const proxy = 'https://goodproxy.eren-yeager-founding-titan-9.workers.dev/fetch?url=';
     const typeMap = { j: 'jpg', p: 'png', g: 'gif', w: 'webp' };
     let downloadedImages = [];
     let galleryId = null;
@@ -144,7 +193,7 @@
     }
 
     async function fetchWithProxy(url) {
-      const res = await fetch(apiProxy + encodeURIComponent(url));
+      const res = await fetch(proxy + encodeURIComponent(url));
       if (!res.ok) throw new Error("Gallery not found");
       return res.json();
     }
@@ -155,8 +204,8 @@
       );
       for (const raw of urls) {
         try {
-          const head = await fetch(apiProxy + encodeURIComponent(raw), { method: 'HEAD' });
-          if (head.ok) return apiProxy + encodeURIComponent(raw);
+          const head = await fetch(proxy + encodeURIComponent(raw), { method: 'HEAD' });
+          if (head.ok) return proxy + encodeURIComponent(raw);
         } catch (_) {}
       }
       return null;
@@ -222,19 +271,29 @@
       const zip = new JSZip();
       const folder = zip.folder(galleryId || "gallery");
 
+      const progress = document.getElementById('progress');
+      const progressText = document.getElementById('progress-text');
+      progress.max = downloadedImages.length;
+      progress.value = 0;
+      progress.style.display = 'block';
+      progressText.style.display = 'block';
+
       for (let i = 0; i < downloadedImages.length; i++) {
         const { url, page, ext } = downloadedImages[i];
         const response = await fetch(url);
         const blob = await response.blob();
         folder.file(`page-${String(page).padStart(3, '0')}.${ext}`, blob);
+        progress.value = i + 1;
+        progressText.innerText = `Downloading ${i + 1} / ${downloadedImages.length}`;
       }
 
       zip.generateAsync({ type: "blob" }).then(content => {
         saveAs(content, `${galleryId || 'gallery'}.zip`);
+        progress.style.display = 'none';
+        progressText.style.display = 'none';
       });
     }
 
-    // Auto-load on page load
     (function () {
       galleryId = getQueryParam('id');
       loadGalleryFromId(galleryId);
