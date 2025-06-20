@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="View full nhentai galleries on Ackerman Mikasa using gallery codes." />
-  <meta name="keywords" content="nhentai, doujinshi, Ackerman Mikasa, hentai gallery, nhentai code" />
-  <meta name="author" content="ErenRogue" />
   <title>Ackerman Mikasa - View nhentai Galleries</title>
+  <meta name="description" content="View full nhentai galleries using gallery codes." />
+  <meta name="author" content="ErenRogue" />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
     body {
       margin: 0;
       font-family: 'Montserrat', sans-serif;
       background: #111;
       color: #fff;
-      min-height: 100vh;
       padding: 2rem 1rem 4rem;
       display: flex;
       flex-direction: column;
@@ -23,7 +23,7 @@
 
     h1 {
       font-size: 2.5rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
       text-align: center;
       color: crimson;
       text-shadow: 0 0 8px #900;
@@ -84,7 +84,6 @@
       border-radius: 16px;
       overflow: hidden;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
-      cursor: pointer;
       transition: transform 0.3s ease;
     }
 
@@ -96,6 +95,7 @@
       width: 100%;
       display: block;
       border-bottom: 2px solid crimson;
+      cursor: zoom-in;
     }
 
     .meta {
@@ -121,7 +121,6 @@
       to { transform: rotate(360deg); }
     }
 
-    /* Modal zoom image */
     .modal {
       display: none;
       position: fixed;
@@ -138,16 +137,13 @@
       border-radius: 10px;
       box-shadow: 0 0 15px crimson;
     }
-
-    .modal:active {
-      display: none;
-    }
   </style>
 </head>
 <body>
-  <h1>Ackerman Mikasa - nhentai Codes</h1>
+  <h1>Ackerman Mikasa - nhentai Viewer</h1>
   <input type="number" id="code" placeholder="Enter nhentai code..." />
   <button onclick="loadGallery()">Load Gallery</button>
+  <button id="download-btn" onclick="downloadZip()" style="display:none;">📦 Download All Pages</button>
   <div id="loader"></div>
   <div class="gallery" id="gallery"></div>
 
@@ -158,6 +154,7 @@
   <script>
     const proxy = 'https://goodproxy.eren-yeager-founding-titan-9.workers.dev/fetch?url=';
     const typeMap = { j: 'jpg', p: 'png', g: 'gif', w: 'webp' };
+    let downloadedImages = [];
 
     async function fetchWithProxy(url) {
       const res = await fetch(proxy + encodeURIComponent(url));
@@ -166,19 +163,24 @@
     }
 
     async function findWorkingImage(mediaId, index, ext) {
-      const servers = [2, 3, 4].map(i => {
-        const raw = `https://i${i}.nhentai.net/galleries/${mediaId}/${index}.${ext}`;
-        return fetch(proxy + encodeURIComponent(raw), { method: 'HEAD' })
-          .then(res => res.ok ? proxy + encodeURIComponent(raw) : null)
-          .catch(() => null);
-      });
-      return await Promise.any(servers);
+      const urls = [2, 3, 4].map(i =>
+        `https://i${i}.nhentai.net/galleries/${mediaId}/${index}.${ext}`
+      );
+      for (const raw of urls) {
+        try {
+          const head = await fetch(proxy + encodeURIComponent(raw), { method: 'HEAD' });
+          if (head.ok) return proxy + encodeURIComponent(raw);
+        } catch (_) {}
+      }
+      return null;
     }
 
     async function loadGallery() {
       const code = document.getElementById('code').value.trim();
       const galleryDiv = document.getElementById('gallery');
       const loader = document.getElementById('loader');
+      downloadedImages = [];
+      document.getElementById('download-btn').style.display = 'none';
       galleryDiv.innerHTML = '';
       if (!code) return alert("Enter a code.");
 
@@ -192,11 +194,13 @@
         const imagePromises = pages.map((p, i) => {
           const ext = typeMap[p.t] || 'jpg';
           return findWorkingImage(mediaId, i + 1, ext).then(url => ({
-            url, w: p.w, h: p.h, page: i + 1
+            url, w: p.w, h: p.h, page: i + 1, ext
           }));
         });
 
         const images = await Promise.all(imagePromises);
+        downloadedImages = images.filter(i => i?.url);
+        if (downloadedImages.length) document.getElementById('download-btn').style.display = 'block';
 
         images.forEach(({ url, w, h, page }) => {
           if (!url) return;
@@ -221,6 +225,23 @@
       const modalImg = document.getElementById('modal-img');
       modalImg.src = url;
       modal.style.display = 'flex';
+    }
+
+    async function downloadZip() {
+      if (!downloadedImages.length) return alert("No images to download.");
+      const zip = new JSZip();
+      const folder = zip.folder("nhentai_gallery");
+
+      for (let i = 0; i < downloadedImages.length; i++) {
+        const { url, page, ext } = downloadedImages[i];
+        const response = await fetch(url);
+        const blob = await response.blob();
+        folder.file(`page-${String(page).padStart(3, '0')}.${ext}`, blob);
+      }
+
+      zip.generateAsync({ type: "blob" }).then(content => {
+        saveAs(content, "nhentai_gallery.zip");
+      });
     }
   </script>
 </body>
