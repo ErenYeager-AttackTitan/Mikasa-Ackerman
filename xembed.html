@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Video Embed</title>
+  <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      height: 100%;
+      overflow: hidden;
+    }
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      height: 0;
+      padding-top: 56.25%; /* 16:9 */
+    }
+    .video-js {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<div class="video-wrapper">
+  <video
+    id="my-video"
+    class="video-js"
+    controls
+    autoplay
+    muted
+    playsinline
+    preload="auto"
+    poster=""
+    data-setup='{}'>
+  </video>
+</div>
+
+<script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
+<script>
+  const proxy = "https://goodproxy.eren-yeager-founding-titan-9.workers.dev/fetch?url=";
+  const id = new URLSearchParams(location.search).get("id");
+
+  async function loadVideo() {
+    if (!id) return alert("Missing ?id=");
+
+    try {
+      const res = await fetch(`https://crew-auth.vercel.app/api/xvideos/${id}`);
+      const data = await res.json();
+
+      const video = videojs("my-video");
+      const videos = data.assets?.videos || [];
+      const images = data.assets?.images || [];
+
+      const m3u8 = videos.find(v => v.endsWith(".m3u8"));
+      const mp4  = videos.find(v => v.endsWith(".mp4"));
+      const poster = images.length > 0 ? images[Math.floor(Math.random() * images.length)] : "";
+
+      if (poster) video.poster(poster);
+
+      if (m3u8) {
+        video.src({ src: proxy + encodeURIComponent(m3u8), type: "application/x-mpegURL" });
+      } else if (mp4) {
+        video.src({ src: proxy + encodeURIComponent(mp4), type: "video/mp4" });
+      } else {
+        alert("❌ No playable video found.");
+      }
+
+      video.on("error", () => {
+        console.error("Playback error:", video.error());
+      });
+    } catch (e) {
+      console.error("Error loading video:", e);
+      alert("❌ Failed to load video.");
+    }
+  }
+
+  loadVideo();
+</script>
+
+</body>
+</html>
