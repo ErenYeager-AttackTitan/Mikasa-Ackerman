@@ -1,60 +1,63 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>YouTube IFrame API Player</title>
+  <title>YouTube Video Player</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
-      height: 100%;
       background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
     #player {
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      max-width: 720px;
+      aspect-ratio: 16/9;
     }
   </style>
 </head>
 <body>
-  <div id="player"></div>
 
-  <script src="https://www.youtube.com/iframe_api"></script>
-  <script>
-    function getVideoId() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("id") || "JDikyBiKRgc"; // Default fallback video ID
+<div id="player"></div>
+
+<script>
+  // Load YouTube IFrame Player API
+  var tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.body.appendChild(tag);
+
+  // Extract the ?id= value from the URL
+  function getVideoId() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('id');
+  }
+
+  let player;
+  function onYouTubeIframeAPIReady() {
+    const videoId = getVideoId();
+    if (!videoId) {
+      alert('No video ID provided in URL. Use ?id=VIDEO_ID');
+      return;
     }
 
-    let player;
+    player = new YT.Player('player', {
+      videoId: videoId,
+      playerVars: {
+        autoplay: 1,
+        controls: 1,
+        modestbranding: 1,
+        rel: 0,
+        showinfo: 0
+      },
+      events: {
+        onReady: (event) => event.target.playVideo()
+      }
+    });
+  }
+</script>
 
-    function onYouTubeIframeAPIReady() {
-      player = new YT.Player('player', {
-        videoId: getVideoId(),
-        playerVars: {
-          autoplay: 1,
-          controls: 1,
-          modestbranding: 1,
-          rel: 0,
-          iv_load_policy: 3,
-          cc_load_policy: 1,
-          playsinline: 1
-        },
-        events: {
-          onReady: (event) => {
-            event.target.mute(); // Mute to allow autoplay
-            event.target.playVideo();
-          },
-          onStateChange: (event) => {
-            // Optional auto-replay
-            if (event.data === YT.PlayerState.ENDED) {
-              player.seekTo(0);
-              player.playVideo();
-            }
-          }
-        }
-      });
-    }
-  </script>
 </body>
 </html>
