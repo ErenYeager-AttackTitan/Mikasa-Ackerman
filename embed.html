@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JWPlayer HLS Player</title>
+  <title>JWPlayer Auto Thumbnails</title>
   <script src="https://cdn.jwplayer.com/libraries/aVr2lJgW.js"></script>
   <style>
     html, body {
@@ -57,12 +57,41 @@
         const m3u8 = data.m3u8 || (data.assets?.videos?.find(v => v.includes(".m3u8")) || null);
         const mp4 = data.mp4 || (data.assets?.videos?.find(v => v.includes(".mp4")) || null);
         const poster = data.poster || (data.assets?.images?.[0] || null);
+        const spriteImage = data.assets?.images?.find(img => img.includes("mozaique")) || null;
 
         if (!m3u8 && !mp4) {
           document.body.innerHTML = "<h2 style='color:white;text-align:center;'>No playable source</h2>";
           return;
         }
 
+        // Generate thumbnails.vtt dynamically (based on sprite)
+        function generateThumbnailsVTT(imageUrl, frameCount = 20, frameWidth = 160, frameHeight = 90, interval = 5) {
+          let vtt = "WEBVTT\n\n";
+          for (let i = 0; i < frameCount; i++) {
+            const start = i * interval;
+            const end = (i + 1) * interval;
+            const x = (i * frameWidth) % (frameWidth * 5); // 5 thumbnails per row
+            const y = Math.floor(i / 5) * frameHeight;
+            vtt += `${formatTime(start)} --> ${formatTime(end)}\n`;
+            vtt += `${imageUrl}#xywh=${x},${y},${frameWidth},${frameHeight}\n\n`;
+          }
+          return vtt;
+        }
+
+        function formatTime(seconds) {
+          const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+          const m = Math.floor((seconds / 60) % 60).toString().padStart(2, '0');
+          const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+          return `${h}:${m}:${s}.000`;
+        }
+
+        let vttUrl = null;
+        if (spriteImage) {
+          const vttBlob = new Blob([generateThumbnailsVTT(spriteImage)], { type: 'text/vtt' });
+          vttUrl = URL.createObjectURL(vttBlob);
+        }
+
+        // Setup JWPlayer
         jwplayer("player").setup({
           file: m3u8 || mp4,
           image: poster,
@@ -72,6 +101,10 @@
           aspectratio: "16:9",
           controls: true,
           stretching: "uniform",
+          tracks: vttUrl ? [{
+            kind: "thumbnails",
+            file: vttUrl
+          }] : []
         });
 
         jwplayer().on('ready', () => spinner.style.display = 'none');
