@@ -1,38 +1,25 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JWPlayer Auto Thumbnails</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JWPlayer Enhanced</title>
   <script src="https://cdn.jwplayer.com/libraries/aVr2lJgW.js"></script>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: #000;
-    }
-    #player {
-      width: 100%;
-      height: 100%;
-    }
+    html, body { margin: 0; padding: 0; background: #000; height: 100%; }
+    #player { width: 100%; height: 100%; }
     #spinner {
       position: absolute;
-      top: 50%;
-      left: 50%;
+      top: 50%; left: 50%;
       margin: -30px;
-      width: 60px;
-      height: 60px;
+      width: 60px; height: 60px;
       border: 6px solid #f3f3f3;
       border-top: 6px solid red;
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      z-index: 999;
+      z-index: 99;
     }
-    @keyframes spin {
-      0% { transform: rotate(0); }
-      100% { transform: rotate(360deg); }
-    }
+    @keyframes spin { 0% { transform: rotate(0); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -45,54 +32,46 @@
       const API = `https://crew-auth.vercel.app/api/xvideos/${id}`;
       const spinner = document.getElementById("spinner");
 
-      if (!id) {
-        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Missing ?id param</h2>";
-        return;
+      function formatTime(seconds) {
+        const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+        const m = Math.floor((seconds / 60) % 60).toString().padStart(2, '0');
+        const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+        return `${h}:${m}:${s}.000`;
+      }
+
+      function generateVTT(images, interval = 5) {
+        let vtt = "WEBVTT\n\n";
+        for (let i = 0; i < images.length; i++) {
+          const start = i * interval;
+          const end = (i + 1) * interval;
+          vtt += `${formatTime(start)} --> ${formatTime(end)}\n${images[i]}\n\n`;
+        }
+        return vtt;
       }
 
       try {
         const res = await fetch(API);
         const data = await res.json();
 
-        const m3u8 = data.m3u8 || (data.assets?.videos?.find(v => v.includes(".m3u8")) || null);
-        const mp4 = data.mp4 || (data.assets?.videos?.find(v => v.includes(".mp4")) || null);
-        const poster = data.poster || (data.assets?.images?.[0] || null);
-        const spriteImage = data.assets?.images?.find(img => img.includes("mozaique")) || null;
+        const m3u8 = data.m3u8 || data.assets?.videos?.find(v => v.includes(".m3u8"));
+        const mp4 = data.mp4 || data.assets?.videos?.find(v => v.includes(".mp4"));
+        const poster = data.poster || data.assets?.images?.[0];
+        const thumbImages = (data.assets?.images || []).filter(img => img.includes(".jpg") && !img.includes("mozaique"));
 
         if (!m3u8 && !mp4) {
-          document.body.innerHTML = "<h2 style='color:white;text-align:center;'>No playable source</h2>";
+          document.body.innerHTML = "<h2 style='color:white;text-align:center;'>No playable video found</h2>";
           return;
         }
 
-        // Generate thumbnails.vtt dynamically (based on sprite)
-        function generateThumbnailsVTT(imageUrl, frameCount = 20, frameWidth = 160, frameHeight = 90, interval = 5) {
-          let vtt = "WEBVTT\n\n";
-          for (let i = 0; i < frameCount; i++) {
-            const start = i * interval;
-            const end = (i + 1) * interval;
-            const x = (i * frameWidth) % (frameWidth * 5); // 5 thumbnails per row
-            const y = Math.floor(i / 5) * frameHeight;
-            vtt += `${formatTime(start)} --> ${formatTime(end)}\n`;
-            vtt += `${imageUrl}#xywh=${x},${y},${frameWidth},${frameHeight}\n\n`;
-          }
-          return vtt;
+        const tracks = [];
+        if (thumbImages.length) {
+          const vttBlob = new Blob([generateVTT(thumbImages)], { type: 'text/vtt' });
+          const vttUrl = URL.createObjectURL(vttBlob);
+          tracks.push({ kind: "thumbnails", file: vttUrl });
         }
 
-        function formatTime(seconds) {
-          const s = Math.floor(seconds % 60).toString().padStart(2, '0');
-          const m = Math.floor((seconds / 60) % 60).toString().padStart(2, '0');
-          const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
-          return `${h}:${m}:${s}.000`;
-        }
-
-        let vttUrl = null;
-        if (spriteImage) {
-          const vttBlob = new Blob([generateThumbnailsVTT(spriteImage)], { type: 'text/vtt' });
-          vttUrl = URL.createObjectURL(vttBlob);
-        }
-
-        // Setup JWPlayer
-        jwplayer("player").setup({
+        const playerInstance = jwplayer("player");
+        playerInstance.setup({
           file: m3u8 || mp4,
           image: poster,
           autostart: true,
@@ -101,15 +80,46 @@
           aspectratio: "16:9",
           controls: true,
           stretching: "uniform",
-          tracks: vttUrl ? [{
-            kind: "thumbnails",
-            file: vttUrl
-          }] : []
+          tracks
         });
 
-        jwplayer().on('ready', () => spinner.style.display = 'none');
-        jwplayer().on('play', () => spinner.style.display = 'none');
-        jwplayer().on('error', () => {
+        playerInstance.on("ready", function () {
+          const container = playerInstance.getContainer();
+          const $ = s => container.querySelector(s);
+
+          const buttonBar = $(".jw-button-container");
+          const spacer = $(".jw-spacer");
+          const timeSlider = $(".jw-slider-time");
+          if (timeSlider && spacer) buttonBar.insertBefore(timeSlider, spacer);
+
+          const rewind = $(".jw-icon-rewind");
+          const forwardClone = rewind?.parentNode?.cloneNode(true);
+
+          if (forwardClone) {
+            const forwardIcon = forwardClone.querySelector(".jw-icon-rewind");
+            forwardIcon.style.transform = "scaleX(-1)";
+            forwardIcon.setAttribute("aria-label", "Forward 10 Seconds");
+
+            const displayNext = $(".jw-display-icon-next");
+            displayNext?.parentNode?.insertBefore(forwardClone, displayNext);
+
+            forwardClone.style.display = "block";
+            const controlForward = rewind.cloneNode(true);
+            controlForward.style.transform = "scaleX(-1)";
+            controlForward.setAttribute("aria-label", "Forward 10 Seconds");
+            rewind.parentNode.replaceChild(controlForward, rewind.nextElementSibling);
+
+            [forwardIcon, controlForward].forEach(el => {
+              el.onclick = () => {
+                const pos = playerInstance.getPosition();
+                playerInstance.seek(pos + 10);
+              };
+            });
+          }
+        });
+
+        playerInstance.on('play', () => spinner.style.display = 'none');
+        playerInstance.on('error', () => {
           spinner.style.display = 'none';
           document.body.innerHTML = "<h2 style='color:red;text-align:center;'>Error loading video</h2>";
         });
@@ -117,7 +127,7 @@
       } catch (err) {
         console.error(err);
         spinner.style.display = 'none';
-        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Error fetching video data</h2>";
+        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Error fetching video</h2>";
       }
     })();
   </script>
