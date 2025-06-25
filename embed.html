@@ -4,20 +4,68 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>XVideos Player</title>
-  <link href="https://unpkg.com/video.js@8.6.1/dist/video-js.min.css" rel="stylesheet" />
-  <script src="https://unpkg.com/video.js@8.6.1/dist/video.min.js"></script>
-  <script src="https://unpkg.com/@videojs/http-streaming@3.10.0/dist/videojs-http-streaming.min.js"></script>
-</head>
-<body style="margin:0; background:black; display:flex; justify-content:center; align-items:center; height:100vh;">
 
-  <video id="player" class="video-js vjs-default-skin" controls autoplay muted playsinline preload="auto" width="720" height="406" poster=""
-    data-setup='{}'>
+  <!-- Video.js CSS -->
+  <link href="https://unpkg.com/video.js@8.6.1/dist/video-js.min.css" rel="stylesheet" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #player {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: 100%;
+      max-height: 100%;
+      aspect-ratio: 16/9;
+    }
+
+    .vjs-loading-spinner {
+      display: block !important;
+    }
+
+    .loading {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid red;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      z-index: 99;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Spinner -->
+  <div id="spinner" class="loading"></div>
+
+  <!-- Video Player -->
+  <video id="player" class="video-js vjs-default-skin" controls autoplay muted playsinline preload="auto"
+    poster="" data-setup='{}'>
     <source src="" type="application/x-mpegURL" />
   </video>
 
+  <!-- Scripts -->
+  <script src="https://unpkg.com/video.js@8.6.1/dist/video.min.js"></script>
+  <script src="https://unpkg.com/@videojs/http-streaming@3.10.0/dist/videojs-http-streaming.min.js"></script>
   <script>
     const getQuery = (key) => new URLSearchParams(location.search).get(key);
     const id = getQuery('id');
+    const spinner = document.getElementById("spinner");
 
     if (!id) {
       document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Missing ?id param</h2>";
@@ -25,12 +73,11 @@
     }
 
     const API = `https://crew-auth.vercel.app/api/xvideos/${id}`;
+    const player = videojs('player');
 
     fetch(API)
       .then(res => res.json())
       .then(data => {
-        const player = videojs('player');
-
         const m3u8 = data.m3u8 || (data.assets?.videos?.find(v => v.includes(".m3u8")) || null);
         const mp4 = data.mp4 || (data.assets?.videos?.find(v => v.includes(".mp4")) || null);
         const poster = data.poster || (data.assets?.images?.[0] || null);
@@ -45,7 +92,6 @@
           document.body.innerHTML = "<h2 style='color:white;text-align:center;'>No playable video found</h2>";
         }
 
-        // Subtitles
         data.subtitles?.forEach((sub, i) => {
           player.addRemoteTextTrack({
             kind: "subtitles",
@@ -55,10 +101,24 @@
             default: i === 0
           }, false);
         });
+
+        player.ready(() => {
+          spinner.style.display = 'none';
+        });
+
+        player.on('loadeddata', () => {
+          spinner.style.display = 'none';
+        });
+
+        player.on('error', () => {
+          spinner.style.display = 'none';
+          document.body.innerHTML = "<h2 style='color:red;text-align:center;'>Error loading video</h2>";
+        });
       })
       .catch(err => {
         console.error(err);
-        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Error loading video</h2>";
+        spinner.style.display = 'none';
+        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Failed to load video</h2>";
       });
   </script>
 </body>
