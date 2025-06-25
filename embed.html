@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>XVideos Player</title>
+  <link href="https://unpkg.com/video.js@8.6.1/dist/video-js.min.css" rel="stylesheet" />
+  <script src="https://unpkg.com/video.js@8.6.1/dist/video.min.js"></script>
+  <script src="https://unpkg.com/@videojs/http-streaming@3.10.0/dist/videojs-http-streaming.min.js"></script>
+</head>
+<body style="margin:0; background:black; display:flex; justify-content:center; align-items:center; height:100vh;">
+
+  <video id="player" class="video-js vjs-default-skin" controls autoplay muted playsinline preload="auto" width="720" height="406" poster=""
+    data-setup='{}'>
+    <source src="" type="application/x-mpegURL" />
+  </video>
+
+  <script>
+    const getQuery = (key) => new URLSearchParams(location.search).get(key);
+    const id = getQuery('id');
+
+    if (!id) {
+      document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Missing ?id param</h2>";
+      throw new Error("Missing video ID");
+    }
+
+    const API = `https://crew-auth.vercel.app/api/xvideos/${id}`;
+
+    fetch(API)
+      .then(res => res.json())
+      .then(data => {
+        const player = videojs('player');
+
+        const m3u8 = data.m3u8 || (data.assets?.videos?.find(v => v.includes(".m3u8")) || null);
+        const mp4 = data.mp4 || (data.assets?.videos?.find(v => v.includes(".mp4")) || null);
+        const poster = data.poster || (data.assets?.images?.[0] || null);
+
+        if (poster) player.poster(poster);
+
+        if (m3u8) {
+          player.src({ src: m3u8, type: "application/x-mpegURL" });
+        } else if (mp4) {
+          player.src({ src: mp4, type: "video/mp4" });
+        } else {
+          document.body.innerHTML = "<h2 style='color:white;text-align:center;'>No playable video found</h2>";
+        }
+
+        // Subtitles
+        data.subtitles?.forEach((sub, i) => {
+          player.addRemoteTextTrack({
+            kind: "subtitles",
+            src: sub.src,
+            srclang: sub.lang || "en",
+            label: sub.label || `Subtitle ${i + 1}`,
+            default: i === 0
+          }, false);
+        });
+      })
+      .catch(err => {
+        console.error(err);
+        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Error loading video</h2>";
+      });
+  </script>
+</body>
+</html>
