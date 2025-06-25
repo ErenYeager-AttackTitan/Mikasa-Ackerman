@@ -3,37 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>XVideos Player</title>
+  <title>XVideos HLS Player</title>
 
-  <!-- Video.js CSS -->
   <link href="https://unpkg.com/video.js@8.6.1/dist/video-js.min.css" rel="stylesheet" />
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      background: black;
+      background: #000;
       height: 100%;
       width: 100%;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
     }
 
     #player {
-      width: 100% !important;
-      height: 100% !important;
-      max-width: 100%;
-      max-height: 100%;
+      width: 100vw;
+      height: 100vh;
       aspect-ratio: 16/9;
-    }
-
-    .vjs-loading-spinner {
-      display: block !important;
+      background: #000;
     }
 
     .loading {
       position: absolute;
+      top: 50%;
+      left: 50%;
+      margin-top: -30px;
+      margin-left: -30px;
       width: 60px;
       height: 60px;
       border: 6px solid #f3f3f3;
@@ -47,37 +41,66 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    .vjs-control-bar {
+      font-size: 14px !important;
+    }
   </style>
 </head>
 <body>
-  <!-- Spinner -->
+
   <div id="spinner" class="loading"></div>
 
-  <!-- Video Player -->
-  <video id="player" class="video-js vjs-default-skin" controls autoplay muted playsinline preload="auto"
+  <video id="player" class="video-js vjs-default-skin vjs-big-play-centered" controls autoplay muted playsinline preload="auto"
     poster="" data-setup='{}'>
     <source src="" type="application/x-mpegURL" />
   </video>
 
-  <!-- Scripts -->
   <script src="https://unpkg.com/video.js@8.6.1/dist/video.min.js"></script>
   <script src="https://unpkg.com/@videojs/http-streaming@3.10.0/dist/videojs-http-streaming.min.js"></script>
+
   <script>
-    const getQuery = (key) => new URLSearchParams(location.search).get(key);
-    const id = getQuery('id');
-    const spinner = document.getElementById("spinner");
+    (async function () {
+      const id = new URLSearchParams(location.search).get("id");
+      const spinner = document.getElementById("spinner");
 
-    if (!id) {
-      document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Missing ?id param</h2>";
-      throw new Error("Missing video ID");
-    }
+      if (!id) {
+        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Missing ?id param</h2>";
+        return;
+      }
 
-    const API = `https://crew-auth.vercel.app/api/xvideos/${id}`;
-    const player = videojs('player');
+      const API = `https://crew-auth.vercel.app/api/xvideos/${id}`;
+      const player = videojs('player', {
+        fluid: true,
+        autoplay: true,
+        muted: true,
+        preload: 'auto',
+        controlBar: {
+          volumePanel: { inline: false },
+          children: [
+            'playToggle',
+            'volumePanel',
+            'currentTimeDisplay',
+            'progressControl',
+            'durationDisplay',
+            'remainingTimeDisplay',
+            'fullscreenToggle'
+          ]
+        },
+        html5: {
+          vhs: {
+            withCredentials: false,
+            overrideNative: true
+          },
+          nativeAudioTracks: false,
+          nativeVideoTracks: false
+        }
+      });
 
-    fetch(API)
-      .then(res => res.json())
-      .then(data => {
+      try {
+        const res = await fetch(API);
+        const data = await res.json();
+
         const m3u8 = data.m3u8 || (data.assets?.videos?.find(v => v.includes(".m3u8")) || null);
         const mp4 = data.mp4 || (data.assets?.videos?.find(v => v.includes(".mp4")) || null);
         const poster = data.poster || (data.assets?.images?.[0] || null);
@@ -90,6 +113,7 @@
           player.src({ src: mp4, type: "video/mp4" });
         } else {
           document.body.innerHTML = "<h2 style='color:white;text-align:center;'>No playable video found</h2>";
+          return;
         }
 
         data.subtitles?.forEach((sub, i) => {
@@ -102,24 +126,19 @@
           }, false);
         });
 
-        player.ready(() => {
-          spinner.style.display = 'none';
-        });
-
-        player.on('loadeddata', () => {
-          spinner.style.display = 'none';
-        });
-
+        player.ready(() => spinner.style.display = 'none');
+        player.on('loadeddata', () => spinner.style.display = 'none');
         player.on('error', () => {
           spinner.style.display = 'none';
           document.body.innerHTML = "<h2 style='color:red;text-align:center;'>Error loading video</h2>";
         });
-      })
-      .catch(err => {
+
+      } catch (err) {
         console.error(err);
         spinner.style.display = 'none';
         document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Failed to load video</h2>";
-      });
+      }
+    })();
   </script>
 </body>
 </html>
