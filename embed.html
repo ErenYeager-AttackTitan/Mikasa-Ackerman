@@ -40,62 +40,60 @@
   <div id="player"></div>
 
   <script>
-    (async function () {
-      const id = new URLSearchParams(location.search).get("id");
-      if (id && id.startsWith("video.")) {
-  id = id.replace("video.", ""); // Result: "hsheiie72s"
-      };
-      const API = `https://crew-auth.vercel.app/api/xvideos/${id}`;
-      const spinner = document.getElementById("spinner");
+  (async function () {
+  let id = new URLSearchParams(location.search).get("id");
+  if (id && id.startsWith("video.")) {
+    id = id.replace("video.", ""); // Removes "video." prefix
+  }
 
-      if (!id) {
-        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Missing ?id param</h2>";
-        return;
-      }
+  const API = `https://crew-auth.vercel.app/api/xvideos/${id}`;
+  const spinner = document.getElementById("spinner");
 
-      try {
-        const res = await fetch(API);
-        const data = await res.json();
+  if (!id) {
+    document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Missing ?id param</h2>";
+    return;
+  }
 
-        const m3u8 = data.m3u8 || (data.assets?.videos?.find(v => v.includes(".m3u8")) || null);
-        const mp4 = data.mp4 || (data.assets?.videos?.find(v => v.includes(".mp4")) || null);
-        const poster = data.poster || (data.assets?.images?.[0] || null);
-        const title = data.title
-        
-        if (!m3u8 && !mp4) {
-          document.body.innerHTML = "<h2 style='color:white;text-align:center;'>No playable source</h2>";
-          return;
-        }
+  try {
+    const res = await fetch(API);
+    const data = await res.json();
 
-        jwplayer("player").setup({
-          file: m3u8 || mp4,
-          image: poster,
-          title: title,
-          autostart: false,
-          mute: true,
-          width: "100%",
-          aspectratio: "16:9",
-          controls: true,
-          stretching: "uniform",
-        });
+    const m3u8 = data.m3u8 || (data.assets?.videos?.find(v => v.includes(".m3u8")) || null);
+    const mp4 = data.mp4 || (data.assets?.videos?.find(v => v.includes(".mp4")) || null);
+    const poster = data.poster || (data.assets?.images?.[0] || null);
+    const title = data.title;
 
-        jwplayer().on('ready', () => spinner.style.display = 'none');
-        jwplayer().on('play', () => spinner.style.display = 'none');
-        jwplayer().on('error', () => {
-          spinner.style.display = 'none';
-          document.body.innerHTML = "<h2 style='color:red;text-align:center;'>Error loading video</h2>";
-        });
+    if (!m3u8 && !mp4) {
+      document.body.innerHTML = "<h2 style='color:white;text-align:center;'>No playable source</h2>";
+      return;
+    }
 
+    jwplayer("player").setup({
+      file: m3u8 || mp4,
+      image: poster,
+      title: title,
+      autostart: false,
+      mute: true,
+      width: "100%",
+      aspectratio: "16:9",
+      controls: true,
+      stretching: "uniform",
+    });
 
+    jwplayer().on('ready', () => spinner.style.display = 'none');
+    jwplayer().on('play', () => spinner.style.display = 'none');
+    jwplayer().on('error', () => {
+      spinner.style.display = 'none';
+      document.body.innerHTML = "<h2 style='color:red;text-align:center;'>Error loading video</h2>";
+    });
 
-        
-
-      } catch (err) {
-        console.error(err);
-        spinner.style.display = 'none';
-        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Error fetching video data</h2>";
-      }
-    })();
+  } catch (err) {
+    console.error(err);
+    spinner.style.display = 'none';
+    document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Error fetching video data</h2>";
+  }
+})();
+    
   </script>
 </body>
 </html>
