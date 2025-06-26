@@ -2,7 +2,7 @@
   "channels": [
     {
       "id": "1",
-      "channel_name": "Animax",
+      "cname": "Animax",
       "epg_url": "https://jiotv.data.cdn.jio.com/apis/v1.3/getepg/get?offset=0&channel_id=2258",
       "epg": true,
       "image": "https://cdn.jsdelivr.net/gh/ErenYeager-AttackTitan/Mikasa-Ackerman@main/animax.png",
@@ -11,7 +11,7 @@
     },
     {
       "id": "2",
-      "channel_name": "Sony Yay",
+      "cname": "Sony Yay",
       "epg_url": "",
       "epg": false,
       "image": "https://cdn.jsdelivr.net/gh/ErenYeager-AttackTitan/Mikasa-Ackerman@main/SONY_YAY.png",
