@@ -42,6 +42,9 @@
   <script>
     (async function () {
       const id = new URLSearchParams(location.search).get("id");
+      if (id && id.startsWith("video.")) {
+  id = id.replace("video.", ""); // Result: "hsheiie72s"
+      };
       const API = `https://crew-auth.vercel.app/api/xvideos/${id}`;
       const spinner = document.getElementById("spinner");
 
