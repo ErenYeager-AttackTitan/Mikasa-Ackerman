@@ -67,6 +67,29 @@ previewThumbnails: {
     });
 
 
+
+
+
+
+    jwplayer().on('ready', function () {
+          // Resume playback from previous position
+          const savedTime = localStorage.getItem("video-progress-" + id);
+          if (savedTime) {
+            jwplayer().seek(parseFloat(savedTime));
+          }
+
+          // Save progress every 5 seconds
+          setInterval(() => {
+            const currentTime = jwplayer().getPosition();
+            if (!isNaN(currentTime)) {
+              localStorage.setItem("video-progress-" + id, currentTime);
+            }
+          }, 5000);
+        });
+
+
+    
+
     jwplayer().on('play', () => spinner.style.display = 'none');
     jwplayer().on('error', () => {
       spinner.style.display = 'none';
