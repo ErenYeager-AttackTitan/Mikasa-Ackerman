@@ -71,6 +71,9 @@
         const mp4 = data.mp4 || (data.assets?.videos?.find(v => v.includes(".mp4")) || null);
         const poster = data.poster || (data.assets?.images?.[0] || null);
 
+
+        const title = data.title
+        
         if (!m3u8 && !mp4) {
           document.body.innerHTML = "<h2 style='color:white;text-align:center;'>No playable source</h2>";
           return;
@@ -93,8 +96,8 @@
           },
           fullscreen: true,
           playlist: [{
-            title: "ANIMAX",
-            description: "You're Watching",
+            title: "Xvideos",
+            description: title,
             image: poster,
             tracks: [], // no VTT
             sources: [{ file: m3u8 || mp4 }]
