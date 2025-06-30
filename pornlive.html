@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JWPlayer - Naiad Stream</title>
+
+  <link rel="stylesheet" href="https://mikasa-ackerman-cdn.pages.dev/static/style.css">
+  <script src="https://cdn.jwplayer.com/libraries/KB5zFt7A.js"></script>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      height: 100%;
+    }
+
+    .wrap {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+    .wrap #player {
+      position: absolute;
+      width: 100% !important;
+      height: 100% !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div id="player"></div>
+    <div id="skipIntro"></div>
+  </div>
+
+  <script>
+    (async function () {
+      const id = new URLSearchParams(location.search).get("id");
+      if (!id) {
+        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Missing ?id param</h2>";
+        return;
+      }
+
+      const API = `https://manifest-server.naiadsystems.com/live/s:${id}.json`;
+      try {
+        const res = await fetch(API);
+        const data = await res.json();
+
+        const hlsList = data.formats?.["mp4-hls"]?.encodings || [];
+        const posterList = data.formats?.jpeg?.encodings || [];
+
+        const hlsSource = hlsList.at(-1)?.location;
+        const poster = posterList.at(-1)?.location || "";
+
+        const title = data.title || "Live Stream";
+        const description = data.description || "Streaming from Naiad Systems";
+
+        if (!hlsSource) {
+          document.body.innerHTML = "<h2 style='color:white;text-align:center;'>No playable stream</h2>";
+          return;
+        }
+
+        const playerInstance = jwplayer("player").setup({
+          controls: true,
+          autostart: true,
+          mute: false,
+          displaytitle: true,
+          displaydescription: true,
+          skin: { name: "netflix" },
+          logo: {
+            file: "https://mikasa-ackerman-cdn.pages.dev/index.jpg",
+            link: "https://mikasa-ackerman-cdn.pages.dev/"
+          },
+          width: "100%",
+          aspectratio: "16:9",
+          playlist: [{
+            title: title,
+            description: description,
+            image: poster,
+            sources: [{
+              file: hlsSource
+            }]
+          }]
+        });
+
+        playerInstance.on("error", function () {
+          document.body.innerHTML = "<h2 style='color:red;text-align:center;'>Error loading video</h2>";
+        });
+
+      } catch (err) {
+        console.error(err);
+        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Error fetching stream data</h2>";
+      }
+    })();
+  </script>
+</body>
+  </html>
+  
