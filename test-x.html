@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="https://mikasa-ackerman-cdn.pages.dev/static/style.css">
+  <script src="https://code.jquery.com/jquery-3.6.3.min.js"
+    integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+  <script src='https://cdn.jwplayer.com/libraries/KB5zFt7A.js'></script>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#000000">
+  <link rel="apple-touch-icon" href="https://mikasa-ackerman-cdn.pages.dev/index.jpg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+  <style>
+    .wrap #player {
+      position: absolute;
+      height: 100% !important;
+      width: 100% !important;
+    }
+
+    .wrap .btn {
+      position: absolute;
+      top: 15%;
+      left: 90%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      color: black;
+      font-size: 12px;
+      padding: 6px 12px;
+      border: 1px solid white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    @media screen and (max-width:600px) {
+      .wrap .btn {
+        font-size: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="wrap">
+    <div id="player"></div>
+    <div id="skipIntro"></div>
+  </div>
+
+  <script>
+    (async function () {
+      let id = new URLSearchParams(location.search).get("id");
+      if (!id) {
+        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Missing ?id param</h2>";
+        return;
+      }
+
+      if (id.startsWith("video.")) {
+        id = id.replace("video.", "");
+      }
+
+      const API = `https://crew-auth.vercel.app/api/xvideos/${id}`;
+      try {
+        const res = await fetch(API);
+        const data = await res.json();
+
+        const m3u8 = data.m3u8 || (data.assets?.videos?.find(v => v.includes(".m3u8")) || null);
+        const mp4 = data.mp4 || (data.assets?.videos?.find(v => v.includes(".mp4")) || null);
+        const poster = data.poster || (data.assets?.images?.[0] || null);
+
+        if (!m3u8 && !mp4) {
+          document.body.innerHTML = "<h2 style='color:white;text-align:center;'>No playable source</h2>";
+          return;
+        }
+
+        const lastTimeKey = `jw-progress-${id}`;
+        const savedTime = parseFloat(localStorage.getItem(lastTimeKey)) || 0;
+
+        const playerInstance = jwplayer("player").setup({
+          controls: true,
+          displaytitle: true,
+          displaydescription: true,
+          abouttext: "Animax",
+          aboutlink: "https://mikasa-ackerman-cdn.pages.dev/channels/watch/anime/animax",
+          autostart: "viewable",
+          skin: { name: "netflix" },
+          logo: {
+            file: "",
+            link: "https://mikasa-ackerman-cdn.pages.dev/channels/watch/anime/animax"
+          },
+          fullscreen: true,
+          playlist: [{
+            title: "ANIMAX",
+            description: "You're Watching",
+            image: poster,
+            tracks: [], // no VTT
+            sources: [{ file: m3u8 || mp4 }]
+          }],
+          advertising: {
+            client: "vast",
+            schedule: [{
+              offset: "pre",
+              tag: ""
+            }]
+          }
+        });
+
+        playerInstance.on("ready", function () {
+          if (savedTime > 5) {
+            playerInstance.seek(savedTime);
+          }
+
+          // Inject custom 10s skip buttons
+          const playerContainer = playerInstance.getContainer();
+          const buttonContainer = playerContainer.querySelector('.jw-button-container');
+          const spacer = buttonContainer.querySelector('.jw-spacer');
+          const timeSlider = playerContainer.querySelector('.jw-slider-time');
+          buttonContainer.insertBefore(timeSlider, spacer);
+
+          const rewindContainer = playerContainer.querySelector('.jw-display-icon-rewind');
+          const forwardContainer = rewindContainer.cloneNode(true);
+          const forwardDisplayButton = forwardContainer.querySelector('.jw-icon-rewind');
+          forwardDisplayButton.style.transform = 'scaleX(-1)';
+          forwardDisplayButton.ariaLabel = "Forward 10 Seconds";
+
+          const nextContainer = playerContainer.querySelector('.jw-display-icon-next');
+          nextContainer.parentNode.insertBefore(forwardContainer, nextContainer);
+          playerContainer.querySelector('.jw-display-icon-next').style.display = "none";
+
+          const rewindControlBarButton = buttonContainer.querySelector('.jw-icon-rewind');
+          rewindControlBarButton.ariaLabel = "Backward 10 Seconds";
+          const forwardControlBarButton = rewindControlBarButton.cloneNode(true);
+          forwardControlBarButton.style.transform = "scaleX(-1)";
+          forwardControlBarButton.ariaLabel = "Forward 10 Seconds";
+
+          rewindControlBarButton.parentNode.insertBefore(forwardControlBarButton, rewindControlBarButton.nextElementSibling);
+
+          [forwardDisplayButton, forwardControlBarButton].forEach(btn => {
+            btn.onclick = () => {
+              playerInstance.seek(playerInstance.getPosition() + 10);
+            };
+          });
+        });
+
+        playerInstance.on("time", function (e) {
+          localStorage.setItem(lastTimeKey, e.position.toFixed(1));
+        });
+
+        playerInstance.on("complete", function () {
+          localStorage.removeItem(lastTimeKey);
+        });
+
+        playerInstance.on("error", () => {
+          document.body.innerHTML = "<h2 style='color:red;text-align:center;'>Error loading video</h2>";
+        });
+
+      } catch (err) {
+        console.error(err);
+        document.body.innerHTML = "<h2 style='color:white;text-align:center;'>Error fetching video data</h2>";
+      }
+    })();
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('✅ Service Worker registered', reg))
+        .catch(err => console.error('❌ Service Worker registration failed', err));
+    }
+  </script>
+</body>
+  </html>
+  
