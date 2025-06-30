@@ -58,6 +58,8 @@
         const title = data.title || "Live Stream";
         const description = data.description || "Streaming from Naiad Systems";
 
+        const logo = `https://imagetransform.icfcdn.com/avatar/${id}.webp`
+      
         if (!hlsSource) {
           document.body.innerHTML = "<h2 style='color:white;text-align:center;'>No HLS stream found</h2>";
           return;
@@ -65,13 +67,13 @@
 
         jwplayer("player").setup({
           controls: true,
-          autostart: true,
+          autostart: false,
           mute: false,
           displaytitle: true,
           displaydescription: true,
           skin: { name: "netflix" },
           logo: {
-            file: poster,
+            file: logo,
             link: "https://naiadsystems.com"
           },
           width: "100%",
