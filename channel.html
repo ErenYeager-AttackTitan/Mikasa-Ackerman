@@ -3,28 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Channel Viewer</title>
+  <title>Mikasa TV Channel</title>
+
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- JWPlayer -->
-  <script src="https://cdn.jwplayer.com/libraries/aVr2lJgW.js"></script>
+  <!-- Shaka Player -->
+  <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.6.0/dist/shaka-player.compiled.min.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
   <div class="container mx-auto p-4">
     <a href="/" class="text-purple-400 hover:underline">&larr; Back to Home</a>
 
-    <div id="content" class="text-center mt-6">
-      <img id="logo" class="w-32 h-32 mx-auto object-contain mb-4" />
+    <div class="text-center mt-6">
+      <img id="logo" class="w-32 h-32 mx-auto object-contain mb-4 rounded" alt="Channel Logo" />
       <h1 id="title" class="text-3xl font-bold mb-4">Loading...</h1>
 
-      <div id="player" class="w-full aspect-video max-w-5xl mx-auto rounded overflow-hidden"></div>
+      <video
+        id="video"
+        class="w-full max-w-5xl mx-auto aspect-video rounded-lg border-2 border-purple-700"
+        autoplay muted controls playsinline
+      ></video>
     </div>
   </div>
 
   <script>
     const m3uUrl = "https://ackerman-mikasa.pages.dev/playlist.m3u";
-    const queryParams = new URLSearchParams(window.location.search);
-    const channelId = queryParams.get("id");
+    const params = new URLSearchParams(window.location.search);
+    const channelId = params.get("id");
 
     async function parseM3U(url) {
       const res = await fetch(url);
@@ -36,18 +42,37 @@
         if (lines[i].startsWith("#EXTINF")) {
           const idMatch = lines[i].match(/tvg-id="(.*?)"/);
           const logoMatch = lines[i].match(/tvg-logo="(.*?)"/);
-          const titleMatch = lines[i].split(",").pop().trim();
-          const streamUrl = lines[i + 1];
+          const title = lines[i].split(",").pop().trim();
+          const stream = lines[i + 1];
 
           channels.push({
             id: idMatch?.[1],
             logo: logoMatch?.[1],
-            title: titleMatch,
-            url: streamUrl
+            title,
+            url: stream
           });
         }
       }
       return channels;
+    }
+
+    async function initShaka(streamUrl) {
+      const video = document.getElementById('video');
+      shaka.polyfill.installAll();
+
+      if (!shaka.Player.isBrowserSupported()) {
+        alert("Shaka Player not supported in this browser.");
+        return;
+      }
+
+      const player = new shaka.Player(video);
+      try {
+        await player.load(streamUrl);
+        console.log("Stream loaded");
+      } catch (err) {
+        console.error("Error loading stream:", err);
+        alert("Unable to load stream.");
+      }
     }
 
     async function loadChannel() {
@@ -55,24 +80,13 @@
       const channel = channels.find(c => c.id === channelId);
 
       if (!channel) {
-        document.getElementById("title").textContent = "Channel not found";
+        document.getElementById("title").textContent = "Channel Not Found";
         return;
       }
 
-      document.getElementById("title").textContent = channel.title;
       document.getElementById("logo").src = channel.logo;
-
-      jwplayer("player").setup({
-        file: channel.url,
-        image: channel.logo,
-        title: channel.title,
-        width: "100%",
-        aspectratio: "16:9",
-        autostart: true,
-        mute: false,
-        controls: true,
-        stretching: "uniform"
-      });
+      document.getElementById("title").textContent = channel.title;
+      await initShaka(channel.url);
     }
 
     loadChannel();
