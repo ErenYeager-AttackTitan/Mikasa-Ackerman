@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Channel Viewer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+  <div class="container mx-auto p-4">
+    <a href="/" class="text-purple-400 hover:underline">&larr; Back to Home</a>
+
+    <div id="content" class="text-center mt-6">
+      <img id="logo" class="w-32 h-32 mx-auto object-contain mb-4" />
+      <h1 id="title" class="text-3xl font-bold mb-4">Loading...</h1>
+      <video id="player" class="w-full max-w-4xl mx-auto rounded shadow" controls autoplay muted></video>
+    </div>
+  </div>
+
+  <script>
+    const m3uUrl = "https://ackerman-mikasa.pages.dev/playlist.m3u";
+    const queryParams = new URLSearchParams(window.location.search);
+    const channelId = queryParams.get("id");
+
+    async function parseM3U(url) {
+      const res = await fetch(url);
+      const text = await res.text();
+      const lines = text.split("\n");
+
+      const channels = [];
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].startsWith("#EXTINF")) {
+          const idMatch = lines[i].match(/tvg-id="(.*?)"/);
+          const logoMatch = lines[i].match(/tvg-logo="(.*?)"/);
+          const titleMatch = lines[i].split(",").pop().trim();
+          const streamUrl = lines[i + 1];
+
+          channels.push({
+            id: idMatch?.[1],
+            logo: logoMatch?.[1],
+            title: titleMatch,
+            url: streamUrl
+          });
+        }
+      }
+      return channels;
+    }
+
+    async function loadChannel() {
+      const channels = await parseM3U(m3uUrl);
+      const channel = channels.find(c => c.id === channelId);
+
+      if (!channel) {
+        document.getElementById("title").textContent = "Channel not found";
+        return;
+      }
+
+      document.getElementById("title").textContent = channel.title;
+      document.getElementById("logo").src = channel.logo;
+      document.getElementById("player").src = channel.url;
+    }
+
+    loadChannel();
+  </script>
+</body>
+</html>
