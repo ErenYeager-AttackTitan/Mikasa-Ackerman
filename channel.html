@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>MikasaTV - JWPlayer SSAI</title>
+  <meta charset="UTF-8" />
+  <title>MikasaTV - JWPlayer (JSON)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
 
@@ -14,7 +14,7 @@
     <a href="/home" class="text-purple-400 hover:underline">&larr; Back to Home</a>
 
     <div class="text-center mt-6">
-      <img id="logo" class="w-28 h-28 mx-auto object-contain mb-4 rounded" alt="Channel Logo" />
+      <img id="logo" class="w-28 h-28 mx-auto object-contain mb-4 rounded" />
       <h1 id="title" class="text-3xl font-bold mb-6">Loading Channel...</h1>
 
       <div id="player" class="w-full aspect-video max-w-5xl mx-auto rounded-lg overflow-hidden"></div>
@@ -22,40 +22,27 @@
   </div>
 
   <script>
-    const m3uUrl = "https://ackerman-mikasa.pages.dev/playlist.m3u";
+    const jsonUrl = "https://cdn.jsdelivr.net/gh/ErenYeager-AttackTitan/Mikasa-Ackerman@main/playlist.json";
     const params = new URLSearchParams(window.location.search);
     const channelId = params.get("id");
 
-    async function parseM3U(url) {
-      const text = await (await fetch(url)).text();
-      const lines = text.split("\n");
-      const channels = [];
+    async function loadChannel() {
+      const res = await fetch(jsonUrl);
+      const { channels } = await res.json();
+      const channel = channels.find(c => c.id === channelId);
 
-      for (let i = 0; i < lines.length; i++) {
-        if (lines[i].startsWith("#EXTINF")) {
-          const id = lines[i].match(/tvg-id="(.*?)"/)?.[1];
-          const logo = lines[i].match(/tvg-logo="(.*?)"/)?.[1];
-          const title = lines[i].split(",").pop().trim();
-          const stream = lines[i + 1];
-          channels.push({ id, logo, title, url: stream });
-        }
+      if (!channel) {
+        document.getElementById("title").textContent = "Channel Not Found";
+        return;
       }
 
-      return channels;
-    }
-
-    async function loadChannel() {
-      const channels = await parseM3U(m3uUrl);
-      const ch = channels.find(c => c.id === channelId);
-      if (!ch) return document.getElementById("title").textContent = "Channel Not Found";
-
-      document.getElementById("logo").src = ch.logo;
-      document.getElementById("title").textContent = ch.title;
+      document.getElementById("logo").src = channel.image;
+      document.getElementById("title").textContent = channel.cname;
 
       jwplayer("player").setup({
-        file: ch.url,
-        image: ch.logo,
-        title: ch.title,
+        file: channel.m3u8,
+        image: channel.image,
+        title: channel.cname,
         autostart: true,
         controls: true,
         width: "100%",
@@ -64,9 +51,9 @@
         advertising: {
           client: "googima",
           schedule: {
-            myPreroll: {
+            ad1: {
               offset: "pre",
-              tag: "https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_ad_samples&description_url=https%3A%2F%2Fmikasa.tv&env=vp&output=vast&unviewed_position_start=1&cust_params=placement%3Dpreroll&correlator=" // free test tag
+              tag: "https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_ad_samples&description_url=https%3A%2F%2Fmikasa.tv&env=vp&output=vast&unviewed_position_start=1&cust_params=placement%3Dpreroll&correlator="
             }
           }
         }
