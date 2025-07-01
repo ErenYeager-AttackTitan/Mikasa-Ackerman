@@ -1,7 +1,7 @@
 #EXTM3U url-tvg="https://raw.githubusercontent.com/matthuisman/i.mjh.nz/refs/heads/master/SamsungTVPlus/in.xml"
 
-#EXTINF:-1 tvg-id="animax.in" tvg-name="Animax" tvg-logo="https://cdn.jsdelivr.net/gh/ErenYeager-AttackTitan/Mikasa-Ackerman@main/animax.png" group-title="Anime" channel-number="1",Animax
+#EXTINF:-1 tvg-id="1" tvg-name="Animax" tvg-logo="https://cdn.jsdelivr.net/gh/ErenYeager-AttackTitan/Mikasa-Ackerman@main/animax.png" group-title="Anime" channel-number="1",Animax
 https://amg02159-kcglobal-amg02159c1-samsung-in-521.playouts.now.amagi.tv/playlist/amg02159-kcglobal-animax-samsungin/playlist.m3u8
 
-#EXTINF:-1 tvg-id="sonyyay.in" tvg-name="Sony Yay" tvg-logo="https://cdn.jsdelivr.net/gh/ErenYeager-AttackTitan/Mikasa-Ackerman@main/SONY_YAY.png" group-title="Anime" channel-number="2",Sony Yay
+#EXTINF:-1 tvg-id="2" tvg-name="Sony YaY" tvg-logo="https://cdn.jsdelivr.net/gh/ErenYeager-AttackTitan/Mikasa-Ackerman@main/SONY_YAY.png" group-title="Anime" channel-number="2",Sony Yay
 https://pubads.g.doubleclick.net/ssai/event/40H5HfwWTZadFGYkBTqagg/master.m3u8
