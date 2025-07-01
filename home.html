@@ -42,10 +42,16 @@
     async function loadChannels() {
       try {
         const res = await fetch(jsonUrl);
-        const { channels } = await res.json();
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        const data = await res.json();
+        const channels = data.channels || [];
 
         const render = (list) => {
           channelList.innerHTML = "";
+          if (!list.length) {
+            channelList.innerHTML = `<p class="text-center text-gray-400 col-span-full">No channels found.</p>`;
+            return;
+          }
           list.forEach(channel => {
             if (!channel.cname || !channel.image || !channel.m3u8) return;
 
@@ -60,23 +66,19 @@
           });
         };
 
-        // Full render initially
         render(channels);
 
         // Search filter
         searchInput.addEventListener("input", e => {
           const query = e.target.value.toLowerCase().trim();
-          if (query === "") {
-            render(channels);
-          } else {
-            const filtered = channels.filter(ch =>
-              ch.cname.toLowerCase().includes(query)
-            );
-            render(filtered);
-          }
+          const filtered = channels.filter(ch =>
+            ch.cname.toLowerCase().includes(query)
+          );
+          render(filtered);
         });
 
       } catch (err) {
+        console.error("Failed to load channels:", err);
         channelList.innerHTML = `<p class="text-red-500 text-center col-span-full">Failed to load channels.</p>`;
       }
     }
