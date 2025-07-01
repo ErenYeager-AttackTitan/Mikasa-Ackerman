@@ -1,43 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MikasaTV Channel</title>
-
-  <!-- Tailwind CSS -->
+  <meta charset="UTF-8">
+  <title>MikasaTV - JWPlayer SSAI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Shaka Player & UI -->
-  <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.6.0/dist/shaka-player.compiled.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.6.0/dist/ui.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shaka-player@4.6.0/dist/controls.css"/>
-
-  <style>
-    /* Customize Shaka UI with Tailwind colors */
-    .shaka-controls-container {
-      @apply rounded-lg bg-gray-800 ring-2 ring-purple-600;
-    }
-    .shaka-button {
-      @apply text-white hover:text-purple-400;
-    }
-    .shaka-caption {
-      @apply text-white bg-black/50;
-    }
-  </style>
+  <!-- JWPlayer -->
+  <script src="https://cdn.jwplayer.com/libraries/aVr2lJgW.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
   <div class="container mx-auto p-4">
-    <a href="/" class="text-purple-400 hover:underline">&larr; Back to Home</a>
+    <a href="/home" class="text-purple-400 hover:underline">&larr; Back to Home</a>
 
     <div class="text-center mt-6">
       <img id="logo" class="w-28 h-28 mx-auto object-contain mb-4 rounded" alt="Channel Logo" />
-      <h1 id="title" class="text-2xl sm:text-3xl font-bold mb-6">Loading...</h1>
+      <h1 id="title" class="text-3xl font-bold mb-6">Loading Channel...</h1>
 
-      <div class="relative max-w-5xl mx-auto">
-        <video id="video" class="w-full aspect-video bg-black rounded-lg" autoplay muted playsinline></video>
-        <div id="shaka-ui-container" class="absolute inset-0"></div>
-      </div>
+      <div id="player" class="w-full aspect-video max-w-5xl mx-auto rounded-lg overflow-hidden"></div>
     </div>
   </div>
 
@@ -48,47 +28,49 @@
 
     async function parseM3U(url) {
       const text = await (await fetch(url)).text();
-      return text.split("\n").reduce((acc, line, i, arr) => {
-        if (line.startsWith("#EXTINF")) {
-          const id = line.match(/tvg-id="(.+?)"/)?.[1];
-          const logo = line.match(/tvg-logo="(.+?)"/)?.[1];
-          const title = line.split(",").pop().trim();
-          const stream = arr[i + 1];
-          acc.push({ id, logo, title, url: stream });
+      const lines = text.split("\n");
+      const channels = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].startsWith("#EXTINF")) {
+          const id = lines[i].match(/tvg-id="(.*?)"/)?.[1];
+          const logo = lines[i].match(/tvg-logo="(.*?)"/)?.[1];
+          const title = lines[i].split(",").pop().trim();
+          const stream = lines[i + 1];
+          channels.push({ id, logo, title, url: stream });
         }
-        return acc;
-      }, []);
-    }
-
-    async function initShakaUi(streamUrl) {
-      const video = document.getElementById("video");
-      shaka.polyfill.installAll();
-      if (!shaka.Player.isBrowserSupported()) {
-        alert("Browser not supported by Shaka");
-        return;
       }
 
-      const player = new shaka.Player(video);
-      const ui = new shaka.ui.Overlay(player, document.getElementById("shaka-ui-container"), video);
-      ui.getControls();
-
-      try {
-        await player.load(streamUrl);
-        console.log("Loaded:", streamUrl);
-      } catch (e) {
-        console.error("Shaka load failed:", e);
-        alert("Stream failed to load.");
-      }
+      return channels;
     }
 
     async function loadChannel() {
       const channels = await parseM3U(m3uUrl);
       const ch = channels.find(c => c.id === channelId);
-      if (!ch) return document.getElementById("title").textContent = "Channel not found";
+      if (!ch) return document.getElementById("title").textContent = "Channel Not Found";
 
       document.getElementById("logo").src = ch.logo;
       document.getElementById("title").textContent = ch.title;
-      await initShakaUi(ch.url);
+
+      jwplayer("player").setup({
+        file: ch.url,
+        image: ch.logo,
+        title: ch.title,
+        autostart: true,
+        controls: true,
+        width: "100%",
+        aspectratio: "16:9",
+        mute: false,
+        advertising: {
+          client: "googima",
+          schedule: {
+            myPreroll: {
+              offset: "pre",
+              tag: "https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_ad_samples&description_url=https%3A%2F%2Fmikasa.tv&env=vp&output=vast&unviewed_position_start=1&cust_params=placement%3Dpreroll&correlator=" // free test tag
+            }
+          }
+        }
+      });
     }
 
     loadChannel();
