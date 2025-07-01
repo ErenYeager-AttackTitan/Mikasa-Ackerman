@@ -2,67 +2,86 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <title>MikasaTV - Channels</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mikasa TV</title>
+  <meta name="description" content="Browse anime and live channels on MikasaTV. No hosting, no ads, just fast links.">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-900 text-white min-h-screen">
-  <div class="container mx-auto p-4">
-    <h1 class="text-3xl font-bold text-center mb-6">📺 Mikasa TV Channels</h1>
-    
-    <input
-      type="text"
-      id="search"
-      placeholder="Search channels..."
-      class="w-full p-3 mb-6 rounded bg-gray-800 text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-purple-500"
-    />
+<body class="bg-gray-950 text-white font-sans">
 
-    <div id="channels" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-      <!-- Channels will be inserted here -->
-    </div>
+  <!-- Header -->
+  <div class="text-center py-8 bg-gradient-to-b from-purple-900 to-gray-950">
+    <h1 class="text-4xl font-extrabold text-purple-300 mb-2">📺 MikasaTV</h1>
+    <p class="text-gray-400">Fast. Free. Publicly Linked Anime & TV Channels.</p>
   </div>
 
+  <!-- Search -->
+  <div class="max-w-xl mx-auto px-4 mt-10 mb-6">
+    <input
+      id="searchInput"
+      type="text"
+      placeholder="Search for a channel..."
+      class="w-full px-4 py-2 rounded-lg bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+    />
+  </div>
+
+  <!-- Channel Grid -->
+  <div id="channelList" class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto px-4 pb-20"></div>
+
+  <!-- Back to Landing -->
+  <div class="text-center mt-6">
+    <a href="/index.html" class="text-purple-400 hover:underline text-sm">← Back to Welcome Page</a>
+  </div>
+
+  <!-- Script -->
   <script>
     const jsonUrl = "https://cdn.jsdelivr.net/gh/ErenYeager-AttackTitan/Mikasa-Ackerman@main/playlist.json";
-    const channelsContainer = document.getElementById("channels");
-    const searchInput = document.getElementById("search");
-    let channels = [];
+    const searchInput = document.getElementById("searchInput");
+    const channelList = document.getElementById("channelList");
 
-    async function fetchChannels() {
+    async function loadChannels() {
       try {
         const res = await fetch(jsonUrl);
-        const data = await res.json();
-        channels = data.channels;
-        displayChannels(channels);
-      } catch (e) {
-        channelsContainer.innerHTML = "<p class='text-red-500'>Failed to load channels.</p>";
+        const { channels } = await res.json();
+
+        const render = (list) => {
+          channelList.innerHTML = "";
+          list.forEach(channel => {
+            if (!channel.cname || !channel.image || !channel.m3u8) return;
+
+            const div = document.createElement("div");
+            div.className = "bg-gray-800 hover:bg-purple-700 transition rounded-xl p-4 cursor-pointer text-center shadow";
+            div.onclick = () => window.location.href = `/channel.html?id=${channel.id}`;
+            div.innerHTML = `
+              <img src="${channel.image}" alt="${channel.cname}" class="w-20 h-20 mx-auto object-contain mb-3 rounded shadow" />
+              <h2 class="text-lg font-semibold">${channel.cname}</h2>
+            `;
+            channelList.appendChild(div);
+          });
+        };
+
+        // Full render initially
+        render(channels);
+
+        // Search filter
+        searchInput.addEventListener("input", e => {
+          const query = e.target.value.toLowerCase().trim();
+          if (query === "") {
+            render(channels);
+          } else {
+            const filtered = channels.filter(ch =>
+              ch.cname.toLowerCase().includes(query)
+            );
+            render(filtered);
+          }
+        });
+
+      } catch (err) {
+        channelList.innerHTML = `<p class="text-red-500 text-center col-span-full">Failed to load channels.</p>`;
       }
     }
 
-    function displayChannels(list) {
-      channelsContainer.innerHTML = "";
-      list.forEach(channel => {
-        const card = document.createElement("div");
-        card.className = "bg-gray-800 p-3 rounded-lg text-center hover:bg-purple-700 cursor-pointer transition";
-        card.innerHTML = `
-          <img src="${channel.image}" alt="${channel.cname}" class="w-full h-28 object-contain mb-2" />
-          <div class="text-lg font-semibold">${channel.cname}</div>
-        `;
-        card.addEventListener("click", () => {
-          window.location.href = "/channel?id=" + encodeURIComponent(channel.id);
-        });
-        channelsContainer.appendChild(card);
-      });
-    }
-
-    searchInput.addEventListener("input", () => {
-      const keyword = searchInput.value.toLowerCase();
-      const filtered = channels.filter(c => c.cname.toLowerCase().includes(keyword));
-      displayChannels(filtered);
-    });
-
-    fetchChannels();
+    loadChannels();
   </script>
 </body>
-  </html>
-  
+</html>
