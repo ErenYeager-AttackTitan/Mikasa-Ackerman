@@ -40,7 +40,7 @@
       document.getElementById("title").textContent = channel.cname;
 
       jwplayer("player").setup({
-        file: channel.m3u8,
+        file: `https://goodproxy.eren-yeager-founding-titan-9.workers.dev/fetch?url=${channel.m3u8}`,
         image: channel.image,
         title: channel.cname,
         autostart: true,
