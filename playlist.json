@@ -17,6 +17,69 @@
       "image": "https://cdn.jsdelivr.net/gh/ErenYeager-AttackTitan/Mikasa-Ackerman@main/SONY_YAY.png",
       "m3u8": "https://pubads.g.doubleclick.net/ssai/event/40H5HfwWTZadFGYkBTqagg/master.m3u8",
       "type": null
+    },
+    {
+      "id": "3",
+      "cname": "TV Tokyo",
+      "epg_url": "",
+      "epg": false,
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/TV_Tokyo_%28Japanese%29_2023.svg/500px-TV_Tokyo_%28Japanese%29_2023.svg.png",
+      "m3u8": "http://vthanh.utako.moe/TV_Tokyo/index.m3u8",
+      "type": null
+    },
+    {
+      "id": "4",
+      "cname": "TV Asahi",
+      "epg_url": "",
+      "epg": false,
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/TV_Asahi_HD_logo.svg/500px-TV_Asahi_HD_logo.svg.png",
+      "m3u8": "http://vthanh.utako.moe/TV_Asahi/index.m3u8",
+      "type": null
+    },
+    {
+      "id": "5",
+      "cname": "Animax (Alt)",
+      "epg_url": "",
+      "epg": false,
+      "image": "https://cdn.jsdelivr.net/gh/ErenYeager-AttackTitan/Mikasa-Ackerman@main/animax.png",
+      "m3u8": "http://vthanh.utako.moe/Animax/index.m3u8",
+      "type": null
+    },
+    {
+      "id": "6",
+      "cname": "W Cinema",
+      "epg_url": "",
+      "epg": false,
+      "image": "https://cdn-icons-png.flaticon.com/128/5058/5058120.png",
+      "m3u8": "http://luong.utako.moe/wcinema/index.m3u8",
+      "type": null
+    },
+    {
+      "id": "7",
+      "cname": "J Sports 1",
+      "epg_url": "",
+      "epg": false,
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/J_Sports_Logo.svg/500px-J_Sports_Logo.svg.png",
+      "m3u8": "http://luong.utako.moe/js1/index.m3u8",
+      "type": null
+    },
+    {
+      "id": "8",
+      "cname": "NHK World",
+      "epg_url": "",
+      "epg": false,
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/NHK_World.svg/500px-NHK_World.svg.png",
+      "m3u8": "https://master.nhkworld.jp/nhkworld-tv/playlist/live.m3u8",
+      "type": null
+    },
+    {
+      "id": "9",
+      "cname": "Animax Japan",
+      "epg_url": "",
+      "epg": false,
+      "image": "https://cdn.jsdelivr.net/gh/ErenYeager-AttackTitan/Mikasa-Ackerman@main/animax.png",
+      "m3u8": "http://vthanh.utako.moe/Animax/index.m3u8",
+      "type": null
     }
   ]
 }
