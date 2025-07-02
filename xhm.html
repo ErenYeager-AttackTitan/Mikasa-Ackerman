@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://mikasa-ackerman-cdn.pages.dev/static/style.css">
+  <script src="https://code.jquery.com/jquery-3.6.3.min.js"
+    integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+  <script src='https://cdn.jwplayer.com/libraries/KB5zFt7A.js'></script>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#000000">
+  <link rel="apple-touch-icon" href="https://mikasa-ackerman-cdn.pages.dev/index.jpg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      height: 100%;
+    }
+
+    .wrap #player {
+      position: absolute;
+      height: 100% !important;
+      width: 100% !important;
+    }
+
+    .wrap .btn {
+      position: absolute;
+      top: 15%;
+      left: 90%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      color: black;
+      font-size: 12px;
+      padding: 6px 12px;
+      border: 1px solid white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    @media screen and (max-width:600px) {
+      .wrap .btn {
+        font-size: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div id="player"></div>
+    <div id="skipIntro"></div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get('id');
+
+    if (!id) {
+      $('#player').html('<h2 style="color:white;text-align:center;margin-top:20%">Missing ID</h2>');
+      throw new Error("No ?id= provided.");
+    }
+
+    const api = `https://crew-auth.vercel.app/xhm/${id}`;
+
+    $.getJSON(api, function (data) {
+      const hls = data.video.hls;
+      const title = data.title || "Untitled";
+      const description = "Now Playing";
+      const poster = data.other_images?.find(img => img.includes("1280x720")) || "https://mikasa-ackerman-cdn.pages.dev/index.jpg";
+
+      const player = jwplayer("player").setup({
+        controls: true,
+        displaytitle: true,
+        displaydescription: true,
+        autostart: "viewable",
+        mute: false,
+        skin: { name: "netflix" },
+        abouttext: "Hentai Player",
+        aboutlink: "https://mikasa-ackerman-cdn.pages.dev",
+        logo: {
+          file: "https://mikasa-ackerman-cdn.pages.dev/index.jpg",
+          link: "https://mikasa-ackerman-cdn.pages.dev"
+        },
+        playlist: [{
+          title: title,
+          description: description,
+          image: poster,
+          sources: [{ file: hls, type: "hls" }]
+        }]
+      });
+
+      // Forward/rewind setup
+      player.on('ready', function () {
+        const rewind = player.getContainer().querySelector('.jw-icon-rewind');
+        const forward = rewind.cloneNode(true);
+
+        forward.style.transform = 'scaleX(-1)';
+        forward.setAttribute('aria-label', 'Forward 10 Seconds');
+        rewind.setAttribute('aria-label', 'Backward 10 Seconds');
+
+        forward.onclick = () => player.seek(player.getPosition() + 10);
+        rewind.onclick = () => player.seek(player.getPosition() - 10);
+
+        const nextButton = player.getContainer().querySelector('.jw-display-icon-next');
+        nextButton?.parentNode?.insertBefore(forward, nextButton);
+
+        const controlBar = player.getContainer().querySelector('.jw-button-container');
+        const rewindBtn = controlBar.querySelector('.jw-icon-rewind');
+        const forwardBarBtn = rewindBtn.cloneNode(true);
+
+        forwardBarBtn.style.transform = 'scaleX(-1)';
+        forwardBarBtn.setAttribute('aria-label', 'Forward 10 Seconds');
+        forwardBarBtn.onclick = () => player.seek(player.getPosition() + 10);
+
+        rewindBtn.parentNode.insertBefore(forwardBarBtn, rewindBtn.nextElementSibling);
+      });
+    });
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('✅ Service Worker registered', reg))
+        .catch(err => console.error('❌ Service Worker registration failed', err));
+    }
+  </script>
+</body>
+    </html>
+    
