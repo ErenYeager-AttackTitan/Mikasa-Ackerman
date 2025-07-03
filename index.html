@@ -3,8 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Home - PornHub Clone</title>
+  <title>Video Hub</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* line clamp polyfill (if not using Tailwind plugin) */
+    .line-clamp-2 {
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+  </style>
 </head>
 <body class="p-4">
   <h1 class="text-3xl font-bold mb-6 text-center">Porn Video Collection</h1>
@@ -20,7 +29,7 @@
   </div>
 
   <!-- Grid -->
-  <div id="videoGrid" class="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"></div>
+  <div id="videoGrid" class="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"></div>
 
   <script>
     const videoGrid = document.getElementById('videoGrid');
@@ -40,13 +49,16 @@
 
         const card = document.createElement('a');
         card.href = `/video?id=${v._id}`;
-        card.className = 'bg-gray-800 rounded-lg overflow-hidden shadow hover:scale-[1.02] duration-200 block';
+        card.className =
+          'block bg-gray-800 rounded-xl overflow-hidden shadow hover:shadow-xl hover:scale-[1.02] duration-200';
 
         card.innerHTML = `
-          <img src="${v.img}" alt="${v.title}" class="w-full h-40 object-cover" />
+          <div class="aspect-w-16 aspect-h-9 w-full">
+            <img src="${v.img}" alt="${v.title}" class="w-full h-full object-cover" />
+          </div>
           <div class="p-3 space-y-2">
             <span class="text-xs ${siteColor} text-white px-2 py-1 rounded">${site}</span>
-            <h2 class="text-sm font-medium line-clamp-2">${v.title}</h2>
+            <h2 class="text-sm font-semibold line-clamp-2">${v.title}</h2>
           </div>
         `;
 
@@ -54,14 +66,15 @@
       });
     }
 
-    fetch("https://crew-auth.vercel.app/video")
+    fetch("https://crew-auth.vercel.app/videos")
       .then(res => res.json())
       .then(data => {
         allVideos = data;
         render(allVideos);
       })
-      .catch(() => {
-        videoGrid.innerHTML = `<p class="text-red-500">Error loading videos.</p>`;
+      .catch(err => {
+        console.error("Fetch error:", err);
+        videoGrid.innerHTML = `<p class="text-red-500">Error loading videos. ${err.message}</p>`;
       });
 
     searchInput.addEventListener('input', () => {
