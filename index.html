@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OurHub - Home</title>
+  <title>Home - PornHub Clone</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="p-4">
-  <h1 class="text-3xl font-bold mb-4 text-center">Video Hub</h1>
+  <h1 class="text-3xl font-bold mb-6 text-center">Porn Video Collection</h1>
 
-  <!-- Search Bar -->
+  <!-- Search -->
   <div class="max-w-xl mx-auto mb-6">
     <input
       type="text"
@@ -19,49 +19,55 @@
     />
   </div>
 
-  <!-- Video Grid -->
+  <!-- Grid -->
   <div id="videoGrid" class="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"></div>
 
   <script>
-    const apiUrl = 'https://crew-auth.vercel.app/video';
     const videoGrid = document.getElementById('videoGrid');
     const searchInput = document.getElementById('search');
     let allVideos = [];
 
-    function renderVideos(videos) {
+    function render(videos) {
       videoGrid.innerHTML = '';
-      videos.forEach(video => {
-        const site = video.xvideo ? 'XVideos' : video.xhamster ? 'XHamster' : 'Unknown';
-        const siteColor = video.xvideo ? 'bg-red-600' : 'bg-pink-600';
-        const el = document.createElement('div');
-        el.className = 'bg-gray-800 rounded-lg overflow-hidden shadow-md';
-        el.innerHTML = `
-          <img src="${video.img}" alt="${video.title}" class="w-full h-40 object-cover" />
+      if (videos.length === 0) {
+        videoGrid.innerHTML = '<p class="text-center text-gray-400">No results found.</p>';
+        return;
+      }
+
+      videos.forEach(v => {
+        const site = v.xvideo ? 'XVideos' : v.xhamster ? 'XHamster' : 'Unknown';
+        const siteColor = v.xvideo ? 'bg-red-600' : 'bg-pink-600';
+
+        const card = document.createElement('a');
+        card.href = `/video?id=${v._id}`;
+        card.className = 'bg-gray-800 rounded-lg overflow-hidden shadow hover:scale-[1.02] duration-200 block';
+
+        card.innerHTML = `
+          <img src="${v.img}" alt="${v.title}" class="w-full h-40 object-cover" />
           <div class="p-3 space-y-2">
-            <span class="text-sm px-2 py-1 rounded ${siteColor}">${site}</span>
-            <h2 class="text-md font-semibold line-clamp-2">${video.title}</h2>
+            <span class="text-xs ${siteColor} text-white px-2 py-1 rounded">${site}</span>
+            <h2 class="text-sm font-medium line-clamp-2">${v.title}</h2>
           </div>
         `;
-        videoGrid.appendChild(el);
+
+        videoGrid.appendChild(card);
       });
     }
 
-    // Fetch videos
-    fetch(apiUrl)
+    fetch("https://crew-auth.vercel.app/video")
       .then(res => res.json())
       .then(data => {
         allVideos = data;
-        renderVideos(allVideos);
+        render(allVideos);
       })
-      .catch(err => {
-        videoGrid.innerHTML = `<p class="text-red-500">Failed to load videos.</p>`;
+      .catch(() => {
+        videoGrid.innerHTML = `<p class="text-red-500">Error loading videos.</p>`;
       });
 
-    // Search handler
     searchInput.addEventListener('input', () => {
       const keyword = searchInput.value.toLowerCase();
       const filtered = allVideos.filter(v => v.title.toLowerCase().includes(keyword));
-      renderVideos(filtered);
+      render(filtered);
     });
   </script>
 </body>
