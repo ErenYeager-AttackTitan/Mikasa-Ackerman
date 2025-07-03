@@ -1,95 +1,87 @@
 <!DOCTYPE html>
 <html lang="en" class="bg-gray-900 text-white">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Watch Video</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Watch Video</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
 
-  <body class="p-4 min-h-screen bg-gradient-to-b from-gray-900 to-black">
-    <div class="max-w-5xl mx-auto space-y-6">
-      <!-- Back Button -->
-      <a href="/index.html" class="inline-block mb-2 text-sm text-pink-400 hover:underline">&larr; Back to Home</a>
+<body class="p-4 min-h-screen bg-gradient-to-b from-gray-900 to-black">
+  <div class="max-w-5xl mx-auto space-y-6">
+    
+    <!-- Back Link -->
+    <a href="/index.html" class="inline-block mb-2 text-sm text-pink-400 hover:underline">&larr; Back to Home</a>
 
-      <!-- Video iframe -->
-      <div
-        id="iframeContainer"
-        class="w-full rounded-2xl overflow-hidden bg-black shadow-2xl"
-        style="aspect-ratio: 16/8"
-      ></div>
-
-      <!-- Title + Tags -->
-      <div class="space-y-2">
-        <h1 id="title" class="text-2xl md:text-3xl font-bold leading-tight text-white"></h1>
-
-        <div id="tags" class="flex flex-wrap gap-2 text-sm">
-          <!-- tags will go here -->
-        </div>
-      </div>
-
-      <!-- Error -->
-      <p id="error" class="text-center text-red-500 hidden">Video not found.</p>
+    <!-- Video iframe (BIGGER height) -->
+    <div id="iframeContainer" class="w-full h-[65vh] bg-black rounded-2xl overflow-hidden shadow-2xl">
+      <!-- iframe will be injected here -->
     </div>
 
-    <script>
-      const id = new URLSearchParams(window.location.search).get("id");
-      const titleEl = document.getElementById("title");
-      const tagsEl = document.getElementById("tags");
-      const iframeContainer = document.getElementById("iframeContainer");
-      const errorEl = document.getElementById("error");
+    <!-- Title & Tags -->
+    <div class="space-y-2">
+      <h1 id="title" class="text-2xl md:text-3xl font-bold leading-tight text-white text-center"></h1>
+      <div id="tags" class="flex justify-center flex-wrap gap-2 text-sm"></div>
+    </div>
 
-      if (!id) {
-        errorEl.textContent = "No ID provided.";
-        errorEl.classList.remove("hidden");
-      } else {
-        fetch("https://crew-auth.vercel.app/videos")
-          .then((res) => res.json())
-          .then((videos) => {
-            const video = videos.find((v) => v._id === id);
-            if (!video) {
-              errorEl.textContent = "Video not found.";
-              errorEl.classList.remove("hidden");
-              return;
-            }
+    <!-- Error -->
+    <p id="error" class="text-center text-red-500 hidden">Video not found.</p>
+  </div>
 
-            // Set title
-            titleEl.textContent = video.title;
+  <script>
+    const id = new URLSearchParams(window.location.search).get("id");
+    const titleEl = document.getElementById("title");
+    const tagsEl = document.getElementById("tags");
+    const iframeContainer = document.getElementById("iframeContainer");
+    const errorEl = document.getElementById("error");
 
-            // Detect source
-            const isXhamster = video.xhamster && video.xh;
-            const isXvideo = video.xvideo && video.xv;
-            let iframeURL = "";
-
-            if (isXhamster) {
-              iframeURL = `https://ackerman-mikasa.pages.dev/xhm?id=${encodeURIComponent(video.xh)}`;
-              tagsEl.innerHTML = `
-                <span class="bg-pink-600 px-3 py-1 rounded-full">Source: XHamster</span>
-              `;
-            } else if (isXvideo) {
-              iframeURL = `https://ackerman-mikasa.pages.dev/embed?id=${encodeURIComponent(video.xv)}`;
-              tagsEl.innerHTML = `
-                <span class="bg-red-600 px-3 py-1 rounded-full">Source: XVideos</span>
-              `;
-            }
-
-            if (iframeURL) {
-              const iframe = document.createElement("iframe");
-              iframe.src = iframeURL;
-              iframe.className = "w-full h-full";
-              iframe.setAttribute("allowfullscreen", "true");
-              iframe.setAttribute("frameborder", "0");
-              iframeContainer.appendChild(iframe);
-            } else {
-              errorEl.textContent = "Unsupported video type.";
-              errorEl.classList.remove("hidden");
-            }
-          })
-          .catch((err) => {
-            errorEl.textContent = "Error loading video.";
+    if (!id) {
+      errorEl.textContent = "No ID provided.";
+      errorEl.classList.remove("hidden");
+    } else {
+      fetch("https://crew-auth.vercel.app/videos")
+        .then(res => res.json())
+        .then(videos => {
+          const video = videos.find(v => v._id === id);
+          if (!video) {
+            errorEl.textContent = "Video not found.";
             errorEl.classList.remove("hidden");
-          });
-      }
-    </script>
-  </body>
+            return;
+          }
+
+          // Set title
+          titleEl.textContent = video.title;
+
+          // Detect source
+          const isXhamster = video.xhamster && video.xh;
+          const isXvideo = video.xvideo && video.xv;
+          let iframeURL = "";
+
+          if (isXhamster) {
+            iframeURL = `https://ackerman-mikasa.pages.dev/xhm?id=${encodeURIComponent(video.xh)}`;
+            tagsEl.innerHTML = `<span class="bg-pink-600 px-3 py-1 rounded-full">Source: XHamster</span>`;
+          } else if (isXvideo) {
+            iframeURL = `https://ackerman-mikasa.pages.dev/embed?id=${encodeURIComponent(video.xv)}`;
+            tagsEl.innerHTML = `<span class="bg-red-600 px-3 py-1 rounded-full">Source: XVideos</span>`;
+          }
+
+          if (iframeURL) {
+            const iframe = document.createElement("iframe");
+            iframe.src = iframeURL;
+            iframe.className = "w-full h-full";
+            iframe.setAttribute("allowfullscreen", "true");
+            iframe.setAttribute("frameborder", "0");
+            iframeContainer.appendChild(iframe);
+          } else {
+            errorEl.textContent = "Unsupported video type.";
+            errorEl.classList.remove("hidden");
+          }
+        })
+        .catch(() => {
+          errorEl.textContent = "Error loading video.";
+          errorEl.classList.remove("hidden");
+        });
+    }
+  </script>
+</body>
 </html>
