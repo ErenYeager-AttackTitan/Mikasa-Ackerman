@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Animax JWPlayer</title>
+  <script src="https://cdn.jwplayer.com/libraries/aVr2lJgW.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      height: 100%;
+    }
+
+    #player {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<div id="player"></div>
+
+<script>
+  fetch("https://iptv-api-psi.vercel.app/scrape")
+    .then(res => res.json())
+    .then(data => {
+      // Store each part in separate variables first
+      const sources = data.streams.map((stream, index) => ({
+        file: stream.url,
+        label: stream.resolution,
+        default: index === data.streams.length - 1
+      }));
+
+      const tracks = data.subtitles.map(sub => ({
+        file: sub.url,
+        label: sub.name,
+        kind: "captions",
+        default: true
+      }));
+
+      const playlistItem = {
+        title: "Animax",
+        sources: sources,
+        tracks: tracks
+      };
+
+      const playerOptions = {
+        playlist: [playlistItem],
+        width: "100%",
+        height: "100%"
+      };
+
+      // Setup JWPlayer
+      jwplayer("player").setup(playerOptions);
+    })
+    .catch(err => {
+      console.error("Failed to load JSON:", err);
+    });
+</script>
+
+</body>
+</html>
