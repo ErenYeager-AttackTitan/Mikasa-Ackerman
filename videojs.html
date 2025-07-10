@@ -1,0 +1,102 @@
+1<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Custom Video Player</title>
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .video-container {
+      width: 90%;
+      max-width: 960px;
+      background: #111;
+      padding: 10px;
+      border: 2px solid #f00;
+      border-radius: 12px;
+      box-shadow: 0 0 10px red;
+    }
+
+    video {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      background: #000;
+    }
+
+    .resolution-selector {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .resolution-selector button {
+      flex: 1;
+      padding: 10px;
+      background: #222;
+      border: 1px solid #444;
+      color: white;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: 0.3s;
+    }
+
+    .resolution-selector button:hover {
+      background: #f00;
+    }
+  </style>
+</head>
+<body>
+  <div class="video-container">
+    <video id="videoPlayer" controls crossorigin="anonymous">
+      <track id="subtitleTrack" kind="subtitles" label="English" srclang="en" default>
+    </video>
+    <div class="resolution-selector" id="buttonsContainer"></div>
+  </div>
+
+  <script>
+    const video = document.getElementById("videoPlayer");
+    const subtitleTrack = document.getElementById("subtitleTrack");
+    const buttonsContainer = document.getElementById("buttonsContainer");
+
+    fetch("https://iptv-api-psi.vercel.app/scrape")
+      .then(res => res.json())
+      .then(data => {
+        // Load highest resolution as default
+        video.src = data.streams[data.streams.length - 1].url;
+
+        // Subtitle
+        subtitleTrack.src = data.subtitles[0].url;
+
+        // Add resolution buttons
+        data.streams.forEach(stream => {
+          const btn = document.createElement("button");
+          btn.textContent = stream.resolution;
+          btn.onclick = () => {
+            const currentTime = video.currentTime;
+            const isPaused = video.paused;
+            video.src = stream.url;
+            subtitleTrack.src = data.subtitles[0].url;
+            video.load();
+            video.currentTime = currentTime;
+            if (!isPaused) video.play();
+          };
+          buttonsContainer.appendChild(btn);
+        });
+      })
+      .catch(err => {
+        console.error("Error loading stream:", err);
+      });
+  </script>
+</body>
+</html>
