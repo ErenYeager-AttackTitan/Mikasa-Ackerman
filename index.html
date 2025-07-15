@@ -6,7 +6,12 @@
   <title>BurnedHub</title>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
   <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #121212;
+    }
     .truncate-2 {
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -15,24 +20,25 @@
     }
   </style>
 </head>
-<body class="bg-gray-950 text-white min-h-screen flex flex-col">
+<body class="text-white min-h-screen flex flex-col">
 
   <!-- Header -->
-  <header class="bg-red-700 py-4 shadow-md mb-6">
-    <div class="max-w-6xl mx-auto px-4">
-      <h1 class="text-3xl font-bold tracking-wide">🔥 BurnedHub</h1>
+  <header class="bg-rose-600 py-5 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4">
+      <h1 class="text-4xl font-extrabold tracking-wide">🔥 BurnedHub</h1>
+      <p class="text-sm text-white opacity-80">The hottest content, updated daily</p>
     </div>
   </header>
 
   <!-- Main Content -->
-  <main class="flex-grow px-4 max-w-6xl mx-auto">
-    <div id="video-list" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8"></div>
-    <div id="pagination" class="flex flex-wrap justify-center gap-2 mb-8"></div>
+  <main class="flex-grow px-4 max-w-7xl mx-auto mt-6">
+    <div id="video-list" class="grid gap-6 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 mb-10"></div>
+    <div id="pagination" class="flex justify-center gap-2 mb-12 flex-wrap"></div>
   </main>
 
   <!-- Footer -->
-  <footer class="bg-gray-900 text-center text-sm py-4 border-t border-gray-700">
-    &copy; 2025 BurnedHub. All rights reserved.
+  <footer class="bg-[#1e1e1e] text-center text-sm py-4 border-t border-gray-800">
+    &copy; 2025 <span class="font-semibold text-rose-500">BurnedHub</span>. All rights reserved.
   </footer>
 
   <!-- Script -->
@@ -45,20 +51,20 @@
     const ITEMS_PER_PAGE = 10;
 
     $.getJSON("https://crew-auth.vercel.app/videos", function(data) {
-      data = data.reverse().filter(v => !v.block);
+      data = data.filter(v => !v.block).reverse(); // Latest first
       const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
       const page = getPage();
       const start = (page - 1) * ITEMS_PER_PAGE;
       const videosToShow = data.slice(start, start + ITEMS_PER_PAGE);
 
-      // Video cards
+      // Video Cards
       videosToShow.forEach(video => {
         const link = video.xvideo ? `?xv=${video.xv}` : video.xhamster ? `?xh=${video.xh}` : "#";
         const card = `
-          <a href="watch.html${link}" class="block bg-gray-800 rounded-xl overflow-hidden shadow hover:shadow-xl transition transform hover:-translate-y-1">
-            <img src="${video.img}" alt="${video.title}" class="w-full h-40 md:h-48 object-cover" loading="lazy">
+          <a href="watch.html${link}" class="block bg-[#1e1e1e] rounded-xl overflow-hidden shadow-md hover:shadow-2xl transform hover:-translate-y-1 hover:scale-[1.02] transition duration-200 ease-in-out">
+            <img src="${video.img}" alt="${video.title}" class="w-full h-40 sm:h-48 object-cover" loading="lazy">
             <div class="p-3">
-              <p class="text-sm font-semibold truncate-2">${video.title}</p>
+              <p class="text-sm font-semibold truncate-2 leading-snug">${video.title}</p>
             </div>
           </a>
         `;
@@ -67,7 +73,7 @@
 
       // Pagination
       for (let i = 1; i <= totalPages; i++) {
-        const active = i === page ? "bg-red-600" : "bg-gray-700 hover:bg-gray-600";
+        const active = i === page ? "bg-rose-600" : "bg-gray-700 hover:bg-gray-600";
         const button = `
           <a href="?pg=${i}" class="px-3 py-1 rounded text-sm ${active} transition">
             ${i}
