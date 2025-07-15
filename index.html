@@ -2,17 +2,40 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BurnedHub</title>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <style>
+    .truncate-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  </style>
 </head>
-<body class="bg-gray-900 text-white p-4">
+<body class="bg-gray-950 text-white min-h-screen flex flex-col">
 
-  <h1 class="text-2xl font-bold mb-4">Latest Videos</h1>
+  <!-- Header -->
+  <header class="bg-red-700 py-4 shadow-md mb-6">
+    <div class="max-w-6xl mx-auto px-4">
+      <h1 class="text-3xl font-bold tracking-wide">🔥 BurnedHub</h1>
+    </div>
+  </header>
 
-  <div id="video-list" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"></div>
-  <div id="pagination" class="flex justify-center gap-2"></div>
+  <!-- Main Content -->
+  <main class="flex-grow px-4 max-w-6xl mx-auto">
+    <div id="video-list" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8"></div>
+    <div id="pagination" class="flex flex-wrap justify-center gap-2 mb-8"></div>
+  </main>
 
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-center text-sm py-4 border-t border-gray-700">
+    &copy; 2025 BurnedHub. All rights reserved.
+  </footer>
+
+  <!-- Script -->
   <script>
     const getPage = () => {
       const params = new URLSearchParams(window.location.search);
@@ -25,25 +48,28 @@
       data = data.reverse().filter(v => !v.block);
       const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
       const page = getPage();
-
       const start = (page - 1) * ITEMS_PER_PAGE;
       const videosToShow = data.slice(start, start + ITEMS_PER_PAGE);
 
+      // Video cards
       videosToShow.forEach(video => {
-        const id = video.xvideo ? `?xv=${video.xv}` : video.xhamster ? `?xh=${video.xh}` : "#";
+        const link = video.xvideo ? `?xv=${video.xv}` : video.xhamster ? `?xh=${video.xh}` : "#";
         const card = `
-          <a href="watch.html${id}" class="block bg-gray-800 rounded-lg overflow-hidden shadow hover:shadow-lg transition">
-            <img src="${video.img}" alt="${video.title}" class="w-full h-40 object-cover">
-            <div class="p-2 text-sm font-semibold truncate">${video.title}</div>
+          <a href="watch.html${link}" class="block bg-gray-800 rounded-xl overflow-hidden shadow hover:shadow-xl transition transform hover:-translate-y-1">
+            <img src="${video.img}" alt="${video.title}" class="w-full h-40 md:h-48 object-cover" loading="lazy">
+            <div class="p-3">
+              <p class="text-sm font-semibold truncate-2">${video.title}</p>
+            </div>
           </a>
         `;
         $("#video-list").append(card);
       });
 
-      // Pagination buttons
+      // Pagination
       for (let i = 1; i <= totalPages; i++) {
+        const active = i === page ? "bg-red-600" : "bg-gray-700 hover:bg-gray-600";
         const button = `
-          <a href="?pg=${i}" class="px-3 py-1 rounded ${i === page ? 'bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}">
+          <a href="?pg=${i}" class="px-3 py-1 rounded text-sm ${active} transition">
             ${i}
           </a>
         `;
