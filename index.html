@@ -24,15 +24,24 @@
 
   <!-- Header -->
   <header class="bg-rose-600 py-5 shadow-lg">
-    <div class="max-w-7xl mx-auto px-4">
-      <h1 class="text-4xl font-extrabold tracking-wide">🔥 BurnedHub</h1>
-      <p class="text-sm text-white opacity-80">The hottest content, updated daily</p>
+    <div class="max-w-4xl mx-auto px-4">
+      <h1 class="text-3xl font-extrabold tracking-wide">🔥 BurnedHub</h1>
+      <p class="text-sm text-white opacity-80">The hottest content, original order</p>
     </div>
   </header>
 
-  <!-- Main Content -->
-  <main class="flex-grow px-4 max-w-7xl mx-auto mt-6">
-    <div id="video-list" class="grid gap-6 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 mb-10"></div>
+  <!-- Main -->
+  <main class="flex-grow px-4 max-w-4xl mx-auto mt-6">
+    
+    <!-- Search -->
+    <div class="mb-6">
+      <input type="text" id="search" placeholder="Search videos..." class="w-full px-4 py-2 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-rose-500" />
+    </div>
+
+    <!-- Video List -->
+    <div id="video-list" class="flex flex-col gap-5 mb-10"></div>
+
+    <!-- Pagination -->
     <div id="pagination" class="flex justify-center gap-2 mb-12 flex-wrap"></div>
   </main>
 
@@ -48,39 +57,55 @@
       return parseInt(params.get('pg')) || 1;
     };
 
+    let allVideos = [];
     const ITEMS_PER_PAGE = 10;
 
-    $.getJSON("https://crew-auth.vercel.app/videos", function(data) {
-      data = data.filter(v => !v.block).reverse(); // Latest first
-      const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
-      const page = getPage();
-      const start = (page - 1) * ITEMS_PER_PAGE;
-      const videosToShow = data.slice(start, start + ITEMS_PER_PAGE);
+    function renderVideos(videos, page = 1) {
+      $("#video-list").empty();
+      $("#pagination").empty();
 
-      // Video Cards
+      const totalPages = Math.ceil(videos.length / ITEMS_PER_PAGE);
+      const start = (page - 1) * ITEMS_PER_PAGE;
+      const videosToShow = videos.slice(start, start + ITEMS_PER_PAGE);
+
+      // Render cards
       videosToShow.forEach(video => {
         const link = video.xvideo ? `?xv=${video.xv}` : video.xhamster ? `?xh=${video.xh}` : "#";
         const card = `
-          <a href="watch.html${link}" class="block bg-[#1e1e1e] rounded-xl overflow-hidden shadow-md hover:shadow-2xl transform hover:-translate-y-1 hover:scale-[1.02] transition duration-200 ease-in-out">
-            <img src="${video.img}" alt="${video.title}" class="w-full h-40 sm:h-48 object-cover" loading="lazy">
+          <a href="watch.html${link}" class="block bg-[#1e1e1e] rounded-xl overflow-hidden shadow-md hover:shadow-2xl transform hover:-translate-y-1 hover:scale-[1.01] transition duration-200 ease-in-out">
+            <img src="${video.img}" alt="${video.title}" class="w-full aspect-video object-cover" loading="lazy">
             <div class="p-3">
-              <p class="text-sm font-semibold truncate-2 leading-snug">${video.title}</p>
+              <p class="text-base font-semibold truncate-2">${video.title}</p>
             </div>
           </a>
         `;
         $("#video-list").append(card);
       });
 
-      // Pagination
+      // Pagination buttons
       for (let i = 1; i <= totalPages; i++) {
         const active = i === page ? "bg-rose-600" : "bg-gray-700 hover:bg-gray-600";
         const button = `
-          <a href="?pg=${i}" class="px-3 py-1 rounded text-sm ${active} transition">
+          <a href="?pg=${i}" class="px-3 py-1 rounded text-sm ${active} transition shadow-sm">
             ${i}
           </a>
         `;
         $("#pagination").append(button);
       }
+    }
+
+    $.getJSON("https://crew-auth.vercel.app/videos", function(data) {
+      // KEEP original order from JSON (first is top)
+      allVideos = data.filter(v => !v.block);
+      const page = getPage();
+      renderVideos(allVideos, page);
+    });
+
+    // Live search
+    $("#search").on("input", function () {
+      const query = $(this).val().toLowerCase();
+      const filtered = allVideos.filter(video => video.title.toLowerCase().includes(query));
+      renderVideos(filtered, 1);
     });
   </script>
 
