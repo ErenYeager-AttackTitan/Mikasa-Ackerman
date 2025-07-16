@@ -1,24 +1,42 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>JWPlayer Glow Skin</title>
-  <script src="https://cdn.jwplayer.com/libraries/KB5zFt7A.js"></script>
+  <meta charset="UTF-8">
+  <title>JWPlayer Self-Hosted via IAMCDN</title>
+
+  <!-- Load JWPlayer from self-hosted CDN -->
+  <script src="https://iamcdn.net/player/jwplayer.min.js"></script>
+  <script src="https://iamcdn.net/player/core.bundle.v3.js"></script>
+  <script src="https://iamcdn.net/player/jwplayer.core.controls.html5.js"></script>
+  <!-- Optional: tracking -->
+  <!-- <script src="https://iamcdn.net/player/jwpsrv.js"></script> -->
+
+  <style>
+    body { background: #000; color: #fff; padding: 20px; }
+    #player { max-width: 100%; margin: auto; }
+  </style>
 </head>
 <body>
 
-<div id="myPlayer">Loading the player...</div>
+  <div id="player">Loading player...</div>
 
-<script>
-  jwplayer("myPlayer").setup({
-    file: "https://cdn.jwplayer.com/videos/HkauGhRi-640.mp4",
-    image: "https://cdn.jwplayer.com/thumbs/HkauGhRi-640.jpg",
-    skin: {
-      name: "glow"
-    },
-    width: "100%",
-    aspectratio: "16:9"
-  });
-</script>
+  <script>
+    jwplayer.key = "LxUWKe2IVJaX7/3gPyOmeTi1NyFNOF7KOauh8NtBgD7ou8kskXdiUGgo6CXVTxYe";
+
+    jwplayer("player").setup({
+      file: "https://cdn.jwplayer.com/videos/HkauGhRi-640.mp4",
+      image: "https://cdn.jwplayer.com/thumbs/HkauGhRi-640.jpg",
+      width: "100%",
+      height: 360,
+      aspectratio: "16:9",
+      mute: false,
+      autostart: false,
+      displaytitle: true,
+      skin: {
+        name: "glow" // fallback; no skin.url used here
+      }
+    });
+  </script>
 
 </body>
 </html>
