@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>JWPlayer Glow Skin</title>
+  <script src="https://cdn.jwplayer.com/libraries/KB5zFt7A.js"></script>
+</head>
+<body>
+
+<div id="myPlayer">Loading the player...</div>
+
+<script>
+  jwplayer("myPlayer").setup({
+    file: "https://cdn.jwplayer.com/videos/HkauGhRi-640.mp4",
+    image: "https://cdn.jwplayer.com/thumbs/HkauGhRi-640.jpg",
+    skin: {
+      name: "glow"
+    },
+    width: "100%",
+    aspectratio: "16:9"
+  });
+</script>
+
+</body>
+</html>
