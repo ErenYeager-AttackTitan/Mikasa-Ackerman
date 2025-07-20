@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>JioTV+ Player</title>
+  <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/videojs-contrib-eme@3.9.0/dist/videojs-contrib-eme.min.js"></script>
+  <style>
+    body { background: #000; margin: 0; padding: 0; }
+    .video-js { width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+  <video id="my-player" class="video-js vjs-default-skin" controls autoplay></video>
+
+  <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
+  <script>
+    async function getChannelById(id) {
+      const res = await fetch("https://jiotvplus.iptv07india.workers.dev/playlist");
+      const m3u = await res.text();
+
+      const entries = m3u.split('#EXTINF:-1 ');
+      for (const entry of entries) {
+        if (entry.includes(`tvg-id="${id}"`)) {
+          const stream = entry.match(/https:\/\/[^\s|]+/)[0];
+          const key = entry.match(/license_key=(.*)/)?.[1]?.trim();
+          return { stream, key };
+        }
+      }
+      return null;
+    }
+
+    async function setupPlayer() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = urlParams.get("id");
+
+      if (!id) return alert("No channel ID provided.");
+
+      const data = await getChannelById(id);
+      if (!data) return alert("Channel not found");
+
+      // Get actual ClearKey license
+      const response = await fetch(data.key);
+      const json = await response.json();
+      const clearkey = json.keys[0];
+
+      const player = videojs('my-player', {
+        techOrder: ['html5'],
+        autoplay: true,
+        controls: true,
+        fluid: true,
+        sources: [{
+          src: data.stream,
+          type: 'application/dash+xml',
+          keySystems: {
+            'org.w3.clearkey': {
+              keys: [{
+                kty: clearkey.kty,
+                kid: clearkey.kid,
+                k: clearkey.k
+              }],
+              type: "temporary"
+            }
+          }
+        }]
+      });
+    }
+
+    setupPlayer();
+  </script>
+</body>
+</html>
