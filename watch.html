@@ -8,57 +8,43 @@
   <!-- JWPlayer CDN -->
   <script src="https://cdn.jwplayer.com/libraries/aVr2lJgW.js"></script>
 
-  <!-- TailwindCSS CDN -->
+  <!-- TailwindCSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Styling -->
   <style>
-    body {
-      background-color: #0f172a;
-      color: white;
-      font-family: sans-serif;
-    }
-    .server-btn {
-      @apply px-3 py-1 bg-gray-700 text-white rounded hover:bg-green-600;
-    }
-    .server-btn.active {
-      @apply border border-green-400;
-    }
-    .jwplayer {
-      border-radius: 1rem;
-      overflow: hidden;
-    }
+    body { background: #0f172a; color: #fff; font-family: sans-serif; }
+    .server-btn { background: #374151; color: #fff; padding: 0.5rem 1rem; border-radius: 0.375rem; transition: .2s; }
+    .server-btn:hover { background: #4ade80; }
+    .server-btn.active { border: 2px solid #22c55e; }
+    #jwplayer { border-radius: 1rem; overflow: hidden; }
+    a.back { color: #4ade80; text-decoration: underline; }
   </style>
 </head>
 <body class="p-4">
+  <a href="index.html" class="back">&larr; Back to Matches</a>
 
-  <div class="max-w-4xl mx-auto">
+  <div class="max-w-4xl mx-auto mt-4">
     <h1 id="matchTitle" class="text-2xl md:text-4xl text-center font-bold text-green-400 mb-4">Loading...</h1>
 
-    <!-- JWPlayer -->
-    <div id="jwplayer" class="w-full aspect-video rounded-xl mb-4"></div>
+    <div id="jwplayer" class="w-full aspect-video mb-4"></div>
 
-    <!-- Server Switch -->
-    <div class="text-center mt-2 mb-6">
-      <p class="mb-2 text-gray-300">Select Server:</p>
-      <div id="serverList" class="flex flex-wrap justify-center gap-2"></div>
-    </div>
+    <div id="serverList" class="flex flex-wrap justify-center gap-2 mb-6"></div>
 
-    <!-- Match Info -->
-    <div class="bg-gray-800 p-4 rounded-lg shadow-md">
+    <div class="bg-gray-800 p-4 rounded shadow-md">
       <p><strong>Teams:</strong> <span id="matchTeams"></span></p>
       <p><strong>Tournament:</strong> <span id="matchTournament"></span></p>
-      <p><strong>Status:</strong> <span id="matchStatus" class="text-green-500 font-semibold"></span></p>
+      <p><strong>Status:</strong> <span id="matchStatus" class="font-semibold"></span></p>
       <p><strong>Start Time:</strong> <span id="matchTime"></span></p>
     </div>
   </div>
 
   <script>
-    const jsonURL = "https://raw.githubusercontent.com/Jitendraunatti/fancode/refs/heads/main/data/fancode.json";
-    const id = new URLSearchParams(location.search).get("id");
+    const API = "https://raw.githubusercontent.com/Jitendraunatti/fancode/refs/heads/main/data/fancode.json";
+    const params = new URLSearchParams(location.search);
+    const id = parseInt(params.get("id"), 10);
 
-    async function loadMatch() {
-      const res = await fetch(jsonURL);
+    async function load() {
+      const res = await fetch(API);
       const data = await res.json();
       const match = data.matches.find(m => m.match_id === id);
 
@@ -67,32 +53,41 @@
         return;
       }
 
-      // Set match info
       document.getElementById("matchTitle").textContent = match.title;
-      document.getElementById("matchTeams").textContent = match.teams.map(t => t.name).join(" vs ");
-      document.getElementById("matchTournament").textContent = match.tournament || "-";
-      document.getElementById("matchStatus").textContent = match.match_status || "Unknown";
-      document.getElementById("matchTime").textContent = match.startTime || "-";
+      document.getElementById("matchTeams").textContent = match.teams.map(t=>t.name).join(" vs ");
+      document.getElementById("matchTournament").textContent = match.tournament;
+      document.getElementById("matchTime").textContent = match.startTime;
 
-      // Load primary stream
-      const firstStream = match.sources?.[0]?.url;
-      if (firstStream) {
-        loadJW(firstStream);
-      }
+      const statusText = match.status === "STARTED" ? "Live" :
+                         match.status === "NOT_STARTED" ? "Upcoming" :
+                         match.status === "COMPLETED" ? "Finished" :
+                         match.status;
+      document.getElementById("matchStatus").textContent = statusText;
 
-      // Render other servers
-      const serverList = document.getElementById("serverList");
-      match.sources.forEach((src, idx) => {
+      const cdn = match.STREAMING_CDN;
+      const serverList = document.getElementById("serverList") ;
+
+      const servers = Object.entries(cdn).filter(([key,value]) => key.endsWith("_cdn") && value);
+      // Include Primary_Playback_URL too
+      servers.unshift(["Primary", cdn.Primary_Playback_URL]);
+      
+      servers.forEach(([name, url], idx) => {
+        if (!url) return;
         const btn = document.createElement("button");
-        btn.textContent = `Server ${idx + 1}`;
         btn.className = "server-btn" + (idx === 0 ? " active" : "");
+        btn.innerText = idx === 0 ? "Primary" : name.replace(/_cdn$/, "");
         btn.onclick = () => {
           document.querySelectorAll(".server-btn").forEach(b => b.classList.remove("active"));
           btn.classList.add("active");
-          loadJW(src.url);
+          loadJW(url);
         };
         serverList.appendChild(btn);
       });
+
+      // Load primary stream
+      if (cdn.Primary_Playback_URL) {
+        loadJW(cdn.Primary_Playback_URL);
+      }
     }
 
     function loadJW(url) {
@@ -102,11 +97,11 @@
         aspectratio: "16:9",
         autostart: true,
         cast: {},
-        logo: { file: "", link: "" },
+        logo: {},
       });
     }
 
-    loadMatch();
+    load();
   </script>
 </body>
 </html>
