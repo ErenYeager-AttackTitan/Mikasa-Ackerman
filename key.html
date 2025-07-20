@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Animax (Shaka Player with ClearKey)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      background: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 10px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+    }
+
+    video {
+      width: 100%;
+      max-width: 800px;
+      aspect-ratio: 16/9;
+      background: #111;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🔓 Animax with Shaka Player (ClearKey)</h1>
+
+  <video id="video" controls autoplay></video>
+
+  <!-- Shaka Player JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.7/shaka-player.compiled.js"></script>
+
+  <script>
+    async function initPlayer() {
+      const manifestUri = 'https://jiotvmblive.cdn.jio.com/bpk-tv/Animax_BTS/output/index.mpd?__hdnea__=st=1752978438~exp=1753064838~acl=/*~hmac=822fd3dc49058c876221b485d48e5f0217620a314c3dcb562f9a3fb102570ded';
+
+      const clearKeyId = '3aa4315e260952699373b61cac44cdc0';
+      const clearKeyKey = '85f4575328f290b1f468086d6bc157ed';
+
+      // Create player instance
+      const video = document.getElementById('video');
+      const player = new shaka.Player(video);
+
+      // Attach error handler
+      player.addEventListener('error', (e) => {
+        console.error('Shaka error:', e.detail);
+      });
+
+      // DRM config
+      player.configure({
+        drm: {
+          clearKeys: {
+            [clearKeyId]: clearKeyKey
+          }
+        }
+      });
+
+      // Optional: Set user-agent or headers (for future advanced setup)
+      // player.getNetworkingEngine().registerRequestFilter((type, request) => {
+      //   request.headers['User-Agent'] = 'plaYtv/7.1.3 (Linux;Android 13)';
+      // });
+
+      try {
+        await player.load(manifestUri);
+        console.log('Playback started!');
+      } catch (err) {
+        console.error('Error loading manifest:', err);
+      }
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', initPlayer);
+  </script>
+
+</body>
+</html>
