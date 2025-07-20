@@ -2,96 +2,56 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Watch Match - FanCode</title>
-
-  <!-- TailwindCSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-
-  <!-- JWPlayer CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <script src="https://cdn.jwplayer.com/libraries/aVr2lJgW.js"></script>
-
   <style>
-    body {
-      background-color: #0f172a;
-      color: white;
-      font-family: 'Segoe UI', sans-serif;
-    }
-    .back-button {
-      color: #f43f5e;
-      text-decoration: none;
-    }
-    .back-button:hover {
-      text-decoration: underline;
-    }
+    body { background:#0f172a; color:#fff; font-family:'Segoe UI', sans-serif; }
+    a.back { color:#f43f5e; text-decoration:underline; }
   </style>
 </head>
 <body class="p-4">
-
-  <a href="index.html" class="back-button">&larr; Back to Matches</a>
-
-  <div id="matchDetails" class="mt-6 max-w-4xl mx-auto"></div>
+  <a href="index.html" class="back">&larr; Back</a>
+  <div id="out" class="mt-6 max-w-3xl mx-auto"></div>
 
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const matchId = urlParams.get("id");
-    const jsonURL = "https://raw.githubusercontent.com/Jitendraunatti/fancode/refs/heads/main/data/fancode.json";
+    const id = new URLSearchParams(location.search).get('id');
+    const API = "https://raw.githubusercontent.com/Jitendraunatti/fancode/refs/heads/main/data/fancode.json";
+    document.getElementById('out').innerHTML = '<p>Loading match...</p>';
 
-    async function loadMatch() {
-      if (!matchId) {
-        document.getElementById("matchDetails").innerHTML = `<p class="text-red-500 text-center">❌ No match ID provided in URL.</p>`;
-        return;
-      }
+    async function load(){
+      if(!id){return out.innerHTML='<p class="text-red-500">No ID provided</p>';}
+      const m = (await (await fetch(API)).json()).matches.find(x=>x.match_id==id);
+      if(!m) return out.innerHTML='<p class="text-red-500">Match not found</p>';
 
-      try {
-        const res = await fetch(jsonURL);
-        const data = await res.json();
-        const match = data.matches.find(m => m.match_id === matchId);
+      const isLive = m.status==='STARTED';
+      const isUpcoming = m.status==='NOT_STARTED';
+      const isFinished = m.status==='COMPLETED';
+      const status = isLive?'Live':isUpcoming?'Upcoming':'Finished';
 
-        if (!match) {
-          document.getElementById("matchDetails").innerHTML = `<p class="text-red-500 text-center">❌ Match not found.</p>`;
-          return;
-        }
+      out.innerHTML = `
+        <div class="bg-gray-800 p-4 rounded shadow text-center">
+          <h2 class="text-3xl font-bold mb-2">${m.title}</h2>
+          <p class="text-gray-400 mb-1">${m.tournament}</p>
+          <p class="text-gray-500 mb-2">${m.startTime}</p>
+          <p class="mb-3"><span class="badge ${isLive?'bg-success':isUpcoming?'bg-info':'bg-secondary'}">${status}</span></p>
+          <img src="${m.image}" class="rounded mb-4 w-full h-60 object-cover">
 
-        const teamNames = match.teams.map(t => t.name).join(" vs ");
-        const streamURL = match.STREAMING_CDN?.Primary_Playback_URL;
-
-        document.getElementById("matchDetails").innerHTML = `
-          <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-bold text-blue-400 mb-2">${match.title}</h2>
-            <p class="text-gray-400">${match.tournament} | ${match.startTime}</p>
-            <p class="mb-3 mt-1"><span class="text-yellow-400 font-bold">Teams:</span> ${teamNames}</p>
-
-            <div class="mb-4">
-              <img src="${match.image}" class="rounded-lg w-full max-h-72 object-cover" alt="Match Image">
-            </div>
-
-            ${streamURL ? `
-              <div id="player" class="rounded overflow-hidden mb-4"></div>
-              <script>
-                jwplayer("player").setup({
-                  file: "${streamURL}",
-                  width: "100%",
-                  aspectratio: "16:9",
-                  autostart: true,
-                  controls: true,
-                  stretching: "uniform"
-                });
-              </script>
-            ` : `<p class="text-red-500">❌ Streaming URL not available.</p>`}
-          </div>
-        `;
-      } catch (err) {
-        document.getElementById("matchDetails").innerHTML = `<p class="text-red-500 text-center">⚠️ Error loading match data.</p>`;
-        console.error(err);
-      }
+          ${isLive && m.STREAMING_CDN?.Primary_Playback_URL ?
+            `<div id="player" class="rounded shadow-md mb-4"></div>
+             <script>
+               jwplayer('player').setup({
+                 file: '${m.STREAMING_CDN.Primary_Playback_URL}',
+                 width:'100%', aspectratio:'16:9', autostart:true, controls:true
+               });
+             </script>`
+          : `<p class="text-red-400">Stream ${isUpcoming?'not started yet':'unavailable'}</p>`}
+        </div>`;
     }
 
-    loadMatch();
+    load();
   </script>
-
 </body>
-  </html>
-                                                                         
+</html>
