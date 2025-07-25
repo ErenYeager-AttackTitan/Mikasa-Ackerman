@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Lookism Chapter 1</title>
+</head>
+<body>
+  <h1>Lookism Chapter 1</h1>
+  <div id="container">Loading...</div>
+
+  <script>
+    const container = document.getElementById("container");
+
+    fetch("https://moviecity-api.vercel.app/scrape?type=series&id=lookism&ch=chapter-1")
+      .then(res => res.json())
+      .then(data => {
+        container.innerHTML = '';
+        data.images.forEach(url => {
+          const img = document.createElement("img");
+          img.src = url;
+          img.style.width = "100%";
+          container.appendChild(img);
+        });
+      })
+      .catch(err => {
+        container.innerHTML = "❌ Failed to load images (CORS error)";
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
