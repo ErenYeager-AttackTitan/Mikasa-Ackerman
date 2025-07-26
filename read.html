@@ -2,25 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <title>Mikatoons - Read Manhwa Chapter Online in HD</title>
-  <meta name="description" content="Read Lookism and other manhwa chapters online in HD quality. Enjoy the latest episodes on Mikatoons. Beautiful, fast, and mobile-friendly viewer.">
-  <meta name="keywords" content="Mikatoons, manhwa reader, lookism chapter, read manhwa online, Korean webtoons, manga reader, manhwa viewer, high quality images">
-  <meta name="robots" content="index, follow">
-
-  <!-- Open Graph -->
-  <meta property="og:title" content="Mikatoons - Read Manhwa in HD">
-  <meta property="og:description" content="Enjoy HD manhwa reading on Mikatoons. Lookism and more.">
-  <meta property="og:image" content="https://ackerman-mikasa.pages.dev/index.jpg">
-  <meta property="og:url" content="https://ackerman-mikasa.pages.dev">
-  <meta property="og:type" content="website">
-
-  <!-- Twitter Cards -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Mikatoons - HD Manhwa Chapters">
-  <meta name="twitter:description" content="Fast, beautiful HD manhwa viewer.">
-  <meta name="twitter:image" content="https://ackerman-mikasa.pages.dev">
+  <title>Mikatoons Viewer</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -28,43 +10,44 @@
   <!-- Animate.css -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
 
   <style>
     body {
       background-color: #111;
       color: #fff;
       font-family: 'Orbitron', sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
     }
 
     .manhwa-img {
-      width: 100%;
-      margin: 1rem auto;
-      border-radius: 0.75rem;
       display: block;
-      max-width: 100%;
-      transition: transform 0.3s ease;
-    }
-
-    .manhwa-img:hover {
-      transform: scale(1.01);
+      width: 100%;
+      height: auto;
+      margin: 0;
+      padding: 0;
+      border: none;
+      border-radius: 0;
     }
 
     #viewer {
-      max-width: 900px;
+      max-width: 100%;
       margin: 0 auto;
     }
   </style>
 </head>
-<body class="p-4">
-  <div class="text-center mb-6">
-    <h1 class="text-5xl font-bold text-red-600 animate__animated animate__fadeInDown">🔥 Mikatoons 🔥</h1>
-    <p class="text-gray-400 text-xl">Now reading: <span id="chapter-name" class="text-white">Loading...</span></p>
+<body class="overflow-x-hidden">
+
+  <div class="text-center py-4">
+    <h1 class="text-4xl font-bold text-red-600 animate__animated animate__fadeInDown">🔥 Mikatoons 🔥</h1>
+    <p class="text-gray-400 text-lg">Now reading: <span id="chapter-name" class="text-white">Loading...</span></p>
   </div>
 
   <div id="viewer" class="animate__animated animate__fadeIn">
-    <div class="text-center text-white text-lg">Loading pages...</div>
+    <div class="text-center text-white text-lg py-10">Loading pages...</div>
   </div>
 
   <script>
@@ -80,19 +63,19 @@
       .then(data => {
         document.getElementById('chapter-name').innerText = data.chapter;
         const viewer = document.getElementById('viewer');
-        viewer.innerHTML = '';
+        viewer.innerHTML = ''; // Remove loading text
 
         data.images.forEach(src => {
           const img = document.createElement('img');
           img.src = src;
           img.alt = "Manhwa Page";
           img.loading = "lazy";
-          img.className = "manhwa-img shadow-lg";
+          img.className = "manhwa-img";
           viewer.appendChild(img);
         });
       })
       .catch(err => {
-        document.getElementById('viewer').innerHTML = `<p class="text-red-500 text-xl text-center">❌ Failed to load chapter</p>`;
+        document.getElementById('viewer').innerHTML = `<p class="text-red-500 text-xl text-center py-10">❌ Failed to load chapter</p>`;
         console.error(err);
       });
   </script>
