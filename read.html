@@ -8,9 +8,15 @@
   <div id="viewer"></div>
 
   <script>
-    const id = "lookism";
-    const type = "series";
-    const chapter = "chapter-1";
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    const type = params.get("type");
+    const chapter = params.get("ch");
+
+    if (!id || !type || !chapter) {
+      // No fallback UI, fully silent
+      throw new Error("Missing parameters in URL.");
+    }
 
     const API = `https://moviecity-api.vercel.app/scrape?type=${type}&id=${id}&ch=${chapter}`;
 
@@ -31,10 +37,10 @@
         img.loading = "lazy";
         img.style.display = "block";
         img.style.width = "100%";
-        img.style.background = "white";
         img.style.margin = "0";
         img.style.padding = "0";
         img.style.border = "none";
+        img.style.background = "white";
         viewer.appendChild(img);
       });
     })
