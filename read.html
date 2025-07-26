@@ -1,84 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <title>Mikatoons - Manhwa Viewer</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html, body {
-      background-color: #111;
-      font-family: sans-serif;
-      overflow-x: hidden;
-    }
-
-    #viewer {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-    }
-
-    .image-container {
-      background: white;
-      line-height: 0;
-    }
-
-    .manhwa-img {
-      display: block;
-      width: 100%;
-      height: auto;
-      background: white;
-      border: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    header {
-      background: #b91c1c;
-      color: white;
-      text-align: center;
-      padding: 15px 0;
-      font-size: 1.5rem;
-      font-weight: bold;
-      letter-spacing: 1px;
-    }
-  </style>
+  <title>Mikatoons</title>
 </head>
-<body>
+<body style="margin:0;background:white;">
 
-  <header>Mikatoons</header>
-  <div id="viewer">Loading...</div>
+  <div id="viewer"></div>
 
   <script>
-    const API = 'https://moviecity-api.vercel.app/scrape?type=series&id=lookism&ch=chapter-1';
+    const id = "lookism";
+    const type = "series";
+    const chapter = "chapter-1";
 
-    fetch(API)
-      .then(res => res.json())
-      .then(data => {
-        const viewer = document.getElementById('viewer');
-        viewer.innerHTML = '';
+    const API = `https://moviecity-api.vercel.app/scrape?type=${type}&id=${id}&ch=${chapter}`;
 
-        data.images.forEach(src => {
-          const wrapper = document.createElement('div');
-          wrapper.className = 'image-container';
+    fetch(API, {
+      headers: {
+        "type": type,
+        "id": id,
+        "chapter": chapter
+      }
+    })
+    .then(res => res.json())
+    .then(data => {
+      const viewer = document.getElementById('viewer');
 
-          const img = document.createElement('img');
-          img.src = src;
-          img.alt = 'Manhwa Page';
-          img.className = 'manhwa-img';
-          img.loading = 'lazy';
-
-          wrapper.appendChild(img);
-          viewer.appendChild(wrapper);
-        });
-      })
-      .catch(err => {
-        document.getElementById('viewer').innerText = 'Failed to load chapter.';
-        console.error(err);
+      data.images.forEach(src => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.loading = "lazy";
+        img.style.display = "block";
+        img.style.width = "100%";
+        img.style.background = "white";
+        img.style.margin = "0";
+        img.style.padding = "0";
+        img.style.border = "none";
+        viewer.appendChild(img);
       });
+    })
+    .catch(console.error);
   </script>
 
 </body>
