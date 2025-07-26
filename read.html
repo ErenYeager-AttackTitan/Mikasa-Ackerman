@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Mikatoons - Read Manhwa Chapter Online in HD</title>
+  <meta name="description" content="Read Lookism and other manhwa chapters online in HD quality. Enjoy the latest episodes on Mikatoons. Beautiful, fast, and mobile-friendly viewer.">
+  <meta name="keywords" content="Mikatoons, manhwa reader, lookism chapter, read manhwa online, Korean webtoons, manga reader, manhwa viewer, high quality images">
+  <meta name="robots" content="index, follow">
+
+  <!-- Open Graph for Social -->
+  <meta property="og:title" content="Mikatoons - Read Manhwa in HD">
+  <meta property="og:description" content="Enjoy HD manhwa reading on Mikatoons. Lookism and more.">
+  <meta property="og:image" content="https://mikatoons.com/logo.png">
+  <meta property="og:url" content="https://mikatoons.com">
+  <meta property="og:type" content="website">
+
+  <!-- Twitter Cards -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Mikatoons - HD Manhwa Chapters">
+  <meta name="twitter:description" content="Fast, beautiful HD manhwa viewer.">
+  <meta name="twitter:image" content="https://mikatoons.com/logo.png">
+
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Mikatoons",
+    "url": "https://mikatoons.com",
+    "description": "Read manhwa like Lookism online in HD using Mikatoons. A fast, clean reader built for anime and webtoon lovers.",
+    "applicationCategory": "ComicsApplication",
+    "operatingSystem": "All"
+  }
+  </script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Animate.css -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: #1a1a1a;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+    }
+    .manhwa-img {
+      transition: transform 0.3s ease;
+    }
+    .manhwa-img:hover {
+      transform: scale(1.02);
+      z-index: 10;
+    }
+  </style>
+</head>
+<body class="p-4">
+  <div class="text-center mb-4">
+    <h1 class="text-4xl font-bold text-red-600 animate__animated animate__fadeInDown">🔥 Mikatoons 🔥</h1>
+    <p class="text-gray-400">Now reading: <span id="chapter-name">Loading...</span></p>
+  </div>
+
+  <div id="viewer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-4 animate__animated animate__fadeIn">
+    <div class="text-center col-span-full text-white">Loading pages...</div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get('type') || 'series';
+    const id = params.get('id') || 'lookism';
+    const ch = params.get('ch') || 'chapter-1';
+
+    const api = `https://moviecity-api.vercel.app/scrape?type=${type}&id=${id}&ch=${ch}`;
+
+    fetch(api)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('chapter-name').innerText = data.chapter;
+        const viewer = document.getElementById('viewer');
+        viewer.innerHTML = ''; // Clear loading text
+
+        data.images.forEach(src => {
+          const img = document.createElement('img');
+          img.src = src;
+          img.alt = "Manhwa Page";
+          img.loading = "lazy";
+          img.className = "rounded-xl shadow-lg manhwa-img w-full border-4 border-red-600";
+          viewer.appendChild(img);
+        });
+      })
+      .catch(err => {
+        document.getElementById('viewer').innerHTML = `<p class="text-red-500 text-xl col-span-full">❌ Failed to load chapter</p>`;
+        console.error(err);
+      });
+  </script>
+</body>
+    </html>
+    
