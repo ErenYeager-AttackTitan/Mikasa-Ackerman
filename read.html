@@ -1,24 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Mikatoons Viewer</title>
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Animate.css -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-
-  <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
-
+  <title>Mikatoons - Manhwa Viewer</title>
   <style>
-    html, body {
+    * {
       margin: 0;
       padding: 0;
-      background: #111;
-      font-family: 'Orbitron', sans-serif;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      background-color: #111;
+      font-family: sans-serif;
       overflow-x: hidden;
     }
 
@@ -26,62 +19,67 @@
       display: flex;
       flex-direction: column;
       gap: 0;
-      margin: 0;
-      padding: 0;
+    }
+
+    .image-container {
+      background: white;
+      line-height: 0;
     }
 
     .manhwa-img {
       display: block;
       width: 100%;
       height: auto;
+      background: white;
+      border: none;
       margin: 0;
       padding: 0;
-      border: none;
-      border-radius: 0;
-      line-height: 0;
-      box-sizing: border-box;
+    }
+
+    header {
+      background: #b91c1c;
+      color: white;
+      text-align: center;
+      padding: 15px 0;
+      font-size: 1.5rem;
+      font-weight: bold;
+      letter-spacing: 1px;
     }
   </style>
 </head>
 <body>
 
-  <div class="text-center py-4">
-    <h1 class="text-4xl font-bold text-red-600 animate__animated animate__fadeInDown">🔥 Mikatoons 🔥</h1>
-    <p class="text-gray-400 text-lg">Now reading: <span id="chapter-name" class="text-white">Loading...</span></p>
-  </div>
-
-  <div id="viewer" class="animate__animated animate__fadeIn">
-    <div class="text-center text-white text-lg py-10">Loading pages...</div>
-  </div>
+  <header>Mikatoons</header>
+  <div id="viewer">Loading...</div>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const type = params.get('type') || 'series';
-    const id = params.get('id') || 'lookism';
-    const ch = params.get('ch') || 'chapter-1';
+    const API = 'https://moviecity-api.vercel.app/scrape?type=series&id=lookism&ch=chapter-1';
 
-    const api = `https://moviecity-api.vercel.app/scrape?type=${type}&id=${id}&ch=${ch}`;
-
-    fetch(api)
+    fetch(API)
       .then(res => res.json())
       .then(data => {
-        document.getElementById('chapter-name').innerText = data.chapter;
         const viewer = document.getElementById('viewer');
-        viewer.innerHTML = ''; // clear loading
+        viewer.innerHTML = '';
 
         data.images.forEach(src => {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'image-container';
+
           const img = document.createElement('img');
           img.src = src;
-          img.alt = "Manhwa Page";
-          img.loading = "lazy";
-          img.className = "manhwa-img";
-          viewer.appendChild(img);
+          img.alt = 'Manhwa Page';
+          img.className = 'manhwa-img';
+          img.loading = 'lazy';
+
+          wrapper.appendChild(img);
+          viewer.appendChild(wrapper);
         });
       })
       .catch(err => {
-        document.getElementById('viewer').innerHTML = `<p class="text-red-500 text-xl text-center py-10">❌ Failed to load chapter</p>`;
+        document.getElementById('viewer').innerText = 'Failed to load chapter.';
         console.error(err);
       });
   </script>
+
 </body>
 </html>
