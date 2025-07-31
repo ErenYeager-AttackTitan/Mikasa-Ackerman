@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Gallery</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #000; color: #fff; }
+    header { padding: 1rem; font-size: 1.5rem; background: #111; text-align: center; }
+    #gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(33%, 1fr));
+      gap: 2px;
+    }
+    img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 1rem;
+      background: #222;
+      border: none;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background: crimson;
+    }
+  </style>
+</head>
+<body>
+
+  <header>Gallery</header>
+  <div id="gallery"></div>
+  <button onclick="loadImages()">Load More</button>
+
+  <script>
+    async function loadImages() {
+      const res = await fetch("https://api.waifu.pics/many/nsfw/waifu", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ exclude: [] })
+      });
+      const data = await res.json();
+      const gallery = document.getElementById("gallery");
+      data.files.forEach(url => {
+        const img = document.createElement("img");
+        img.src = url;
+        gallery.appendChild(img);
+      });
+    }
+
+    // Initial load
+    loadImages();
+  </script>
+
+</body>
+</html>
