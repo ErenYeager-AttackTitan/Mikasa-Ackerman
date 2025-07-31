@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NSFW Waifu Viewer</title>
+  <style>
+    body {
+      background-color: #0d0d0d;
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      padding: 1rem;
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 1rem;
+    }
+
+    img {
+      width: 100%;
+      max-width: 500px;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(255, 0, 150, 0.4);
+      margin-bottom: 1rem;
+    }
+
+    button {
+      background-color: #ff007f;
+      color: white;
+      border: none;
+      padding: 0.8rem 1.6rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    button:hover {
+      background-color: #e60073;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>NSFW Waifu Viewer</h1>
+  <img id="waifuImage" src="" alt="Loading NSFW waifu...">
+  <br>
+  <button onclick="fetchWaifu()">Get New Waifu</button>
+
+  <script>
+    async function fetchWaifu() {
+      try {
+        const res = await fetch("https://api.waifu.pics/nsfw/waifu");
+        const data = await res.json();
+        document.getElementById("waifuImage").src = data.url;
+      } catch (err) {
+        alert("Failed to fetch image.");
+        console.error(err);
+      }
+    }
+
+    // Load on page open
+    fetchWaifu();
+  </script>
+
+</body>
+</html>
