@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Animax Live - Vidstack</title>
+
+  <!-- Vidstack Core + HLS + UI -->
+  <script type="module">
+    import 'https://cdn.vidstack.io/player/v2/core/index.js';
+    import 'https://cdn.vidstack.io/player/v2/media/hls/index.js';
+    import 'https://cdn.vidstack.io/player/v2/ui/index.js';
+    import 'https://cdn.vidstack.io/player/v2/plugins/quality/index.js';
+  </script>
+
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    media-player {
+      width: 100%;
+      height: 100%;
+      max-width: 100vw;
+      max-height: 100vh;
+    }
+  </style>
+</head>
+<body>
+
+<media-player
+  title="Animax India Live"
+  src="https://amg02159-kcglobal-amg02159c1-samsung-in-521.playouts.now.amagi.tv/playlist/amg02159-kcglobal-animax-samsungin/playlist.m3u8"
+  crossorigin
+  playsinline
+  autoplay
+  controls
+  stream-type="live"
+  poster="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Animax_logo.svg/2560px-Animax_logo.svg.png"
+  load="visible"
+>
+  <media-provider></media-provider>
+
+  <!-- Optional subtitles (if you have VTT or similar) -->
+  <track
+    src=""
+    kind="subtitles"
+    srclang=""
+    label=""
+    default
+  ></track>
+
+  <!-- Built-in UI with quality selector -->
+  <media-ui></media-ui>
+</media-player>
+
+</body>
+</html>
