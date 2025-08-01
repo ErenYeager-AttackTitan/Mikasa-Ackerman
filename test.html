@@ -2,62 +2,59 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Animax JWPlayer</title>
-  <script src="https://cdn.jwplayer.com/libraries/aVr2lJgW.js"></script>
+  <title>Kaido Watch Player</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #000;
-      height: 100%;
-    }
-
-    #player {
+    body { margin: 0; padding: 0; background: #000; }
+    #iframe-embed {
       width: 100%;
-      height: 100%;
+      height: 100vh;
+      border: none;
+      display: none;
     }
   </style>
 </head>
 <body>
 
-<div id="player"></div>
+<iframe id="iframe-embed" allowfullscreen></iframe>
 
 <script>
-  fetch("https://iptv-api-psi.vercel.app/scrape")
-    .then(res => res.json())
-    .then(data => {
-      // Store each part in separate variables first
-      const sources = data.streams.map((stream, index) => ({
-        file: stream.url,
-        label: stream.resolution,
-        default: index === data.streams.length - 1
-      }));
+  // Static ID for example
+  const episodeId = "3303";
 
-      const tracks = data.subtitles.map(sub => ({
-        file: sub.url,
-        label: sub.name,
-        kind: "captions",
-        default: true
-      }));
+  // Example userSettings and continueWatch simulation
+  const userSettings = {
+    auto_play: 1,
+    play_original_audio: 0,
+    auto_skip_intro: 1
+  };
 
-      const playlistItem = {
-        title: "Animax",
-        sources: sources,
-        tracks: tracks
-      };
+  const continueWatch = {
+    episode_id: 3303,
+    time: 55
+  };
 
-      const playerOptions = {
-        playlist: [playlistItem],
-        width: "100%",
-        height: "100%"
-      };
+  $.get("https://kaido.to/ajax/episode/sources?id=" + episodeId, function(res) {
+    if (res && res.link) {
+      let finalLink = res.link;
 
-      // Setup JWPlayer
-      jwplayer("player").setup(playerOptions);
-    })
-    .catch(err => {
-      console.error("Failed to load JSON:", err);
-    });
+      // If server is 1 or 4, add autoplay/etc.
+      if ([1, 4].includes(parseInt(res.server))) {
+        finalLink +=
+          "&autoPlay=" + userSettings.auto_play +
+          "&oa=" + (userSettings.play_original_audio || 0) +
+          "&asi=" + userSettings.auto_skip_intro;
+
+        if (continueWatch && parseInt(episodeId) === continueWatch.episode_id) {
+          finalLink += "&time=" + continueWatch.time;
+        }
+      }
+
+      $("#iframe-embed").attr("src", finalLink).show();
+    } else {
+      alert("No link found.");
+    }
+  });
 </script>
 
 </body>
