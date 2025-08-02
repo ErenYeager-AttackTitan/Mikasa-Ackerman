@@ -1,71 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Twitch Player</title>
+  <title>JWPlayer Dynamic Stream</title>
   <script src="https://cdn.jwplayer.com/libraries/aVr2lJgW.js"></script>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: #000;
-    }
-    #player {
-      width: 100%;
-      height: 100%;
-    }
+
+    #player { width: 100%; height: 100vh; }
   </style>
 </head>
 <body>
-  <div id="player">Loading...</div>
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
+<div id="player"></div>
 
-    if (!id) {
-      document.getElementById("player").innerText = "Error: No Twitch ID provided!";
-    } else {
-      fetch(`https://pwn.sh/tools/streamapi.py?url=twitch.tv/${id}`)
-        .then(res => res.json())
-        .then(data => {
-          if (!data.success || !data.urls) {
-            document.getElementById("player").innerText = "Stream not available!";
-            return;
-          }
+<script>
+  function getQueryParam(param) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(param);
+  }
 
-          // Prioritized quality order
-          const qualityOrder = ["1080p60", "720p60", "480p", "360p", "160p", "audio_only"];
-          let chosenQuality = null;
+  const id = getQueryParam("id");
 
-          for (let quality of qualityOrder) {
-            if (data.urls[quality]) {
-              chosenQuality = quality;
-              break;
-            }
-          }
+  if (!id) {
+    document.body.innerHTML = "<h2 style='color:white;text-align:center;margin-top:20%;'>Missing ?id= parameter</h2>";
+  } else {
+    jwplayer("player").setup({
+      file: `https://moviecity-api.vercel.app/playlist.m3u8?id=${id}`,
+      type: "hls",
+      title: "Live Stream",
+      width: "100%",
+      aspectratio: "16:9",
+      autostart: true,
+      primary: "html5",
+      playbackRateControls: true,
+      hlshtml: true,
+      skin: { name: "netflix" },
+    });
+  }
+</script>
 
-          if (!chosenQuality) {
-            document.getElementById("player").innerText = "No playable stream found!";
-            return;
-          }
-
-          jwplayer("player").setup({
-            file: data.urls[chosenQuality],
-            width: "100%",
-            height: "100%",
-            type: "hls",
-            title: `${id}'s Twitch Stream (${chosenQuality})`,
-            autostart: true,
-            controls: true
-          });
-        })
-        .catch(err => {
-          document.getElementById("player").innerText = "Error loading stream.";
-          console.error(err);
-        });
-    }
-  </script>
 </body>
 </html>
