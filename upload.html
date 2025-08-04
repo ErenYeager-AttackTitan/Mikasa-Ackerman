@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hydrax Upload</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input, button { padding: 10px; margin: 5px 0; width: 100%; }
+    pre { background: #f4f4f4; padding: 10px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+
+<h2>🎥 Upload Video to Hydrax</h2>
+<form id="uploadForm">
+  <input type="file" id="videoFile" accept="video/*" required />
+  <input type="text" id="episodeTitle" placeholder="Episode Title (for display only)" required />
+  <button type="submit">Upload</button>
+</form>
+
+<div id="result" style="display:none;">
+  <h3>✅ Upload Successful</h3>
+  <p><strong>Slug:</strong> <span id="slug"></span></p>
+  <p><strong>Watch URL:</strong><br>
+    <a href="" target="_blank" id="watchUrl">Loading...</a></p>
+
+  <hr>
+  <h4>📄 Add Subtitles (Optional)</h4>
+  <input type="text" id="subtitleLabel" placeholder="Subtitle Label (e.g. English)">
+  <input type="url" id="subtitleUrl" placeholder="Subtitle File URL (.srt)">
+  <button onclick="addSubtitle()">Add Subtitle</button>
+  <pre id="subStatus"></pre>
+</div>
+
+<pre id="status"></pre>
+
+<script>
+  const form = document.getElementById("uploadForm");
+  const resultDiv = document.getElementById("result");
+  const slugSpan = document.getElementById("slug");
+  const watchLink = document.getElementById("watchUrl");
+  const statusBox = document.getElementById("status");
+  let currentSlug = "";
+
+  form.onsubmit = async function (e) {
+    e.preventDefault();
+    const file = document.getElementById("videoFile").files[0];
+    const title = document.getElementById("episodeTitle").value.trim();
+
+    if (!file || !title) return alert("Please select a file and enter a title.");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    statusBox.textContent = "⏳ Uploading to Hydrax...";
+    resultDiv.style.display = "none";
+
+    try {
+      const res = await fetch("http://up.hydrax.net/2eec49a52eaabf3003d3d4d734957a9c", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+
+      if (!data.status) {
+        statusBox.textContent = "❌ Upload failed: " + data.msg;
+        return;
+      }
+
+      currentSlug = data.slug;
+      const url = `https://hydrax.net/watch/${currentSlug}`;
+
+      slugSpan.textContent = currentSlug;
+      watchLink.href = url;
+      watchLink.textContent = url;
+      resultDiv.style.display = "block";
+      statusBox.textContent = "";
+    } catch (err) {
+      console.error(err);
+      statusBox.textContent = "❌ Upload error.";
+    }
+  };
+
+  async function addSubtitle() {
+    const label = document.getElementById("subtitleLabel").value.trim();
+    const url = document.getElementById("subtitleUrl").value.trim();
+    const out = document.getElementById("subStatus");
+
+    if (!label || !url || !currentSlug) return alert("Missing subtitle info or slug.");
+
+    out.textContent = "⏳ Adding subtitle...";
+
+    const res = await fetch(`https://api.hydrax.net/2eec49a52eaabf3003d3d4d734957a9c/subtitle/${currentSlug}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label, url })
+    });
+
+    const json = await res.json();
+    if (json.status) {
+      out.textContent = "✅ Subtitle added successfully.";
+    } else {
+      out.textContent = "❌ Subtitle error: " + json.msg;
+    }
+  }
+</script>
+
+</body>
+  </html>
+  
