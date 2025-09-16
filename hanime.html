@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hanime Auto Player with VTT</title>
+<style>
+  body {
+    margin: 0;
+    background-color: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    color: #fff;
+    font-family: sans-serif;
+  }
+  h1 {
+    margin: 20px 0;
+    font-size: 1.5rem;
+  }
+  iframe {
+    width: 100%;
+    max-width: 960px;
+    height: 540px;
+    border: none;
+  }
+</style>
+</head>
+<body>
+
+<h1>Hanime Player with VTT</h1>
+<iframe id="hanime-player" allowfullscreen></iframe>
+
+<script>
+async function loadHanimePlayer(slug) {
+  try {
+    // Step 1: get numeric ID
+    const videoData = await fetch(`https://hanime.tv/api/v8/video?id=${slug}`);
+    const videoJson = await videoData.json();
+    const hv_id = videoJson.hentai_video.id;
+
+    // Step 2: get storyboard (VTT)
+    const storyboardData = await fetch(`https://hanime.tv/rapi/v7/hentai_video_storyboards?hv_id=${hv_id}`);
+    const storyboardJson = await storyboardData.json();
+    const storyboard = storyboardJson.hentai_video_storyboards[0];
+
+    // Normally the player expects a "storyboard VTT" URL
+    // Hanime player can read the raw storyboard JSON as VTT
+    const vttUrl = storyboard.url;
+
+    // Step 3: pick m3u8 (720p preferred)
+    const streams = videoJson.videos_manifest.servers[0].streams;
+    const stream = streams.find(s => s.height == '720') || streams[0];
+    const m3u8 = stream.url;
+
+    // Step 4: encode m3u8 and VTT into player.hanime.tv URL
+    const playerUrl = `https://player.hanime.tv/home#${encodeURIComponent(m3u8)}?storyboard=${encodeURIComponent(vttUrl)}`;
+    document.getElementById('hanime-player').src = playerUrl;
+
+    console.log('Loaded Hanime player for slug:', slug);
+    console.log('VTT storyboard URL:', vttUrl);
+
+  } catch (err) {
+    console.error('Failed to load Hanime player:', err);
+  }
+}
+
+// Get slug from URL query ?slug=...
+const urlParams = new URLSearchParams(window.location.search);
+const slug = urlParams.get('slug') || 'akane-wa-tsumare-somerareru-1';
+
+loadHanimePlayer(slug);
+</script>
+
+</body>
+</html>
