@@ -1,0 +1,77 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Watch Page</title>
+  <script src="https://cdn.jwplayer.com/libraries/aVr2lJgW.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e3a8a);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      padding: 15px 20px;
+      text-align: center;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(8px);
+      font-size: 1.2rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    #player {
+      width: 100%;
+      max-width: 960px;
+      aspect-ratio: 16 / 9;
+      margin: 20px auto;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+    }
+    footer {
+      margin-top: auto;
+      padding: 15px;
+      text-align: center;
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+    @media (max-width: 768px) {
+      header {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>🎬 Now Streaming</header>
+
+  <div id="player"></div>
+
+  <footer>Powered by JWPlayer • Modern Blue Theme</footer>
+
+  <script>
+    jwplayer("player").setup({
+      file: "https://dai.google.com/linear/hls/event/C8ncwZDcRR2SC1Uua9hYtg/master.m3u8",
+      width: "100%",
+      aspectratio: "16:9",
+      autostart: true,
+      controls: true,
+      mute: false,
+      skin: {
+        name: "seven"
+      },
+      logo: {
+        file: "",
+        link: "#",
+        position: "top-right"
+      }
+    });
+  </script>
+</body>
+</html>
