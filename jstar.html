@@ -1,158 +1,466 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Channel Player</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <title>M3U → JWPlayer Player</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
 
-  <!-- JWPlayer -->
+  <!-- JWPlayer CDN (your key is set in the script) -->
   <script src="https://cdn.jwplayer.com/libraries/aVr2lJgW.js"></script>
 
   <style>
-    body {
-      margin: 0;
-      background: #000;
-      color: #fff;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    #player-frame {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #000;
-    }
-    #player { width: 100%; height: 100%; }
-
-    #info {
-      padding: 10px;
-      background: #111;
-      font-size: 14px;
-    }
-    #player-title { font-size: 18px; font-weight: bold; }
-    #channel-meta { color: #bbb; margin-top: 4px; }
-    #channel-desc { margin-top: 8px; font-size: 13px; }
-
-    #skeleton, #error {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.8);
-      z-index: 10;
-      color: #fff;
-      font-size: 18px;
-    }
+    :root { --bg:#000; --panel:#0f0f12; --muted:#9aa; --accent:#00bcd4; }
+    html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:Inter,Arial,system-ui;}
+    .container{display:flex;flex-direction:column;height:100%;}
+    header{padding:10px;background:linear-gradient(90deg,#080808, #111);display:flex;gap:10px;align-items:center;}
+    header h1{margin:0;font-size:16px;}
+    .controls{margin-left:auto;display:flex;gap:8px;align-items:center;}
+    select,button,input{background:#121212;border:1px solid #222;color:#fff;padding:6px 8px;border-radius:6px;}
+    .player-area{flex:1;display:flex;min-height:0;} /* min-height:0 needed for flex scrolling on mobile */
+    #player-frame{flex:1;position:relative;background:#000;display:flex;align-items:center;justify-content:center;}
+    #player{width:100%;height:100%;}
+    .sidebar{width:320px;max-width:40%;background:var(--panel);padding:12px;overflow:auto;}
+    .meta{font-size:13px;color:var(--muted);margin-top:8px;}
+    #skeleton,#error{position:absolute;z-index:20;left:0;top:0;width:100%;height:100%;display:none;align-items:center;justify-content:center}
+    #skeleton{background:rgba(0,0,0,0.7);font-size:18px;}
+    #error{background:rgba(0,0,0,0.8);font-size:16px;color:#f88;padding:12px;}
+    .list-item{display:flex;gap:10px;align-items:center;padding:6px;border-radius:6px;margin-bottom:6px;cursor:pointer}
+    .list-item:hover{background:rgba(255,255,255,0.02)}
+    .thumb{width:64px;height:36px;object-fit:cover;border-radius:4px;background:#222}
+    .title{font-weight:600;font-size:14px}
+    .sub{font-size:12px;color:var(--muted)}
+    footer{padding:8px;background:#070707;font-size:12px;color:var(--muted);text-align:center;}
+    @media (max-width:880px){ .sidebar{display:none} }
   </style>
 </head>
 <body>
-  <!-- Player container -->
-  <div id="player-frame">
-    <div id="player"></div>
-    <div id="skeleton">⏳ Loading channel...</div>
-    <div id="error"><span id="error-text"></span></div>
-  </div>
+  <div class="container">
+    <header>
+      <h1>M3U Player → JWPlayer (ClearKey + Cookie aware)</h1>
+      <div class="controls">
+        <input id="m3u-url" placeholder="Paste m3u url or leave to use embedded sample" style="width:360px"/>
+        <button id="load-m3u">Load M3U</button>
+      </div>
+    </header>
 
-  <!-- Info -->
-  <div id="info">
-    <div id="player-title">Loading...</div>
-    <div id="channel-meta"></div>
-    <div id="channel-desc"></div>
+    <div class="player-area">
+      <div id="player-frame">
+        <div id="player"></div>
+        <div id="skeleton">⏳ Loading...</div>
+        <div id="error"><span id="error-text"></span></div>
+      </div>
+
+      <aside class="sidebar" id="sidebar">
+        <div>
+          <label style="font-size:12px;color:var(--muted)">Channels</label>
+          <div id="channel-list" style="margin-top:8px"></div>
+        </div>
+        <div class="meta" id="channel-meta">No channel loaded</div>
+      </aside>
+    </div>
+
+    <footer>Use <code>?m3u=URL</code> or paste a URL above and click "Load M3U".</footer>
   </div>
 
   <script>
-    let playerInstance = null;
-    jwplayer.key = 'XSuP4qMl+9tK17QNb+4+th2Pm9AWgMO/cYH8CI0HGGr7bdjo';
+  /**************************************************************************
+   * Configuration
+   ***************************************************************************/
+  jwplayer.key = 'XSuP4qMl+9tK17QNb+4+th2Pm9AWgMO/cYH8CI0HGGr7bdjo'; // your jw key
 
-    document.addEventListener('DOMContentLoaded', async () => {
-      const id = new URLSearchParams(location.search).get('id');
-      if (!id) return showError("No channel ID provided");
-      await loadChannel(id);
-    });
+  // Default sample M3U (your pasted sample). Will be used if no ?m3u param
+  const SAMPLE_M3U = `#EXTM3U
+#EXTM3U x-tvg-url="https://avkb.short.gy/jioepg.xml.gz"
 
-    async function loadChannel(id) {
-      try {
-        showSkeleton("Fetching channel...");
-        const res = await fetch("https://hidden-boat-b444.saqlainhaider8198.workers.dev/");
-        if (!res.ok) throw new Error("Failed to fetch channel list");
+#EXTINF:-1 tvg-id="1373" group-title="Jiostar" tvg-logo="https://jiotvimages.cdn.jio.com/dare_images/images/Disney_Channel.png",Disney Channel
+#KODIPROP:inputstream.adaptive.license_type=clearkey
+#KODIPROP:inputstream.adaptive.license_key=5181d3e6698055578cedc5bfc86b3e56:3dca7917d8cf9bb7095dc72b48bdcd3c
+#EXTVLCOPT:http-user-agent=plaYtv/7.1.3 (Linux;Android 13) ygx/69.1 ExoPlayerLib/824.0
+#EXTHTTP:{"cookie":"__hdnea__=st=1758242531~exp=1758328931~acl=/*~hmac=76f0d197450721812dbded07072f78a638ed6350725991594796438490446b91"}
+https://jiotvpllive.cdn.jio.com/bpk-tv/Disney_Channel_BTS/output/index.mpd?__hdnea__=st=1758242531~exp=1758328931~acl=/*~hmac=76f0d197450721812dbded07072f78a638ed6350725991594796438490446b91&xxx=%7Ccookie=__hdnea__=st=1758242531~exp=1758328931~acl=/*~hmac=76f0d197450721812dbded07072f78a638ed6350725991594796438490446b91
 
-        const channels = await res.json();
-        const channel = channels.find(c => c.channel_id === id);
-        if (!channel) throw new Error("Channel not found");
+#EXTINF:-1 tvg-id="1374" group-title="Jiostar" tvg-logo="https://jiotvimages.cdn.jio.com/dare_images/images/Disney_Junior.png",Disney Junior
+#KODIPROP:inputstream.adaptive.license_type=clearkey
+#KODIPROP:inputstream.adaptive.license_key=1b1f9702f7d853c1b198495f64924311:40e11e60a12dd6c154dfea0ffbd5bda8
+#EXTVLCOPT:http-user-agent=plaYtv/7.1.3 (Linux;Android 13) ygx/69.1 ExoPlayerLib/824.0
+#EXTHTTP:{"cookie":"__hdnea__=st=1758242531~exp=1758328931~acl=/*~hmac=76f0d197450721812dbded07072f78a638ed6350725991594796438490446b91"}
+https://jiotvpllive.cdn.jio.com/bpk-tv/Disney_Junior_BTS/output/index.mpd?__hdnea__=st=1758242531~exp=1758328931~acl=/*~hmac=76f0d197450721812dbded07072f78a638ed6350725991594796438490446b91&xxx=%7Ccookie=__hdnea__=st=1758242531~exp=1758328931~acl=/*~hmac=76f0d197450721812dbded07072f78a638ed6350725991594796438490446b91
+`;
 
-        updatePlayer(channel);
-        updateChannelInfo(channel);
-        hideSkeleton();
-      } catch (e) {
-        showError(e.message);
+  /**************************************************************************
+   * Helpers: parse M3U lines and extract metadata
+   ***************************************************************************/
+  function parseExtAttributes(attrString) {
+    // parse key="value" pairs in EXTINF attrs and return object
+    const attrs = {};
+    const re = /([\w-]+?)="([^"]*)"/g;
+    let m;
+    while ((m = re.exec(attrString)) !== null) {
+      attrs[m[1]] = m[2];
+    }
+    return attrs;
+  }
+
+  function parseM3U(m3uText) {
+    const lines = m3uText.split(/\r?\n/).map(l => l.trim()).filter(l => l !== "");
+    const items = [];
+    let current = null;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      if (line.startsWith('#EXTINF:')) {
+        // new entry
+        // #EXTINF:-1 tvg-id="1373" ... ,Display Name
+        const parts = line.split(',');
+        const attrPart = parts[0].replace('#EXTINF:', '').trim();
+        const title = parts.slice(1).join(',').trim();
+        // attrPart contains attrs before the comma; parse attributes with regex
+        const attrs = parseExtAttributes(attrPart);
+        current = {
+          title: title || attrs['tvg-name'] || attrs['tvg-id'] || 'Unknown',
+          attrs,
+          kodi: {},
+          exthttp: null,
+          url: null
+        };
+        items.push(current);
+        continue;
+      }
+
+      if (!current) {
+        // Could be global header like #EXTM3U x-tvg-url=...
+        continue;
+      }
+
+      // KODIPROP lines
+      if (line.startsWith('#KODIPROP:')) {
+        // e.g. #KODIPROP:inputstream.adaptive.license_key=KEYID:KEY
+        const after = line.replace('#KODIPROP:', '');
+        const eq = after.split('=');
+        const key = eq.shift();
+        const val = eq.join('=');
+
+        current.kodi[key] = val;
+        continue;
+      }
+
+      // EXTHTTP containing JSON with cookie field
+      if (line.startsWith('#EXTHTTP:')) {
+        const jsonPart = line.replace('#EXTHTTP:', '');
+        try {
+          const parsed = JSON.parse(jsonPart);
+          // common format: {"cookie":"__hdnea__=..."}
+          current.exthttp = parsed;
+        } catch (e) {
+          console.warn('Failed to parse EXTHTTP JSON', e);
+        }
+        continue;
+      }
+
+      // VLC opts etc - we ignore except maybe useragent stuff; skip
+      if (line.startsWith('#EXTVLCOPT:') || line.startsWith('#EXTGRP:')) {
+        continue;
+      }
+
+      // If this line does not start with # it's probably the URL
+      if (!line.startsWith('#')) {
+        current.url = line;
+        current.rawUrl = line;
+        current.finalUrl = applyCookieToUrl(line, current.exthttp);
+        continue;
       }
     }
 
-    function updatePlayer(channel) {
-      setupXHRInterceptor(channel.cookie);
-      playerInstance = jwplayer("player").setup({
-        playlist: [{
-          title: channel.channel_name,
-          image: channel.channel_logo,
-          file: channel.channel_url,
-          drm: {
-            clearkey: { keyId: channel.keyId, key: channel.key }
-          }
-        }],
-        width: "100%",
-        height: "100%",
-        autostart: true,
-        controls: true,
-        skin: { name: "custom" }
-      });
-
-      playerInstance.on("error", e => {
-        showError("Playback error: " + e.message);
-      });
+    // Post process: parse kodi license_key into clearkey object if present
+    for (const it of items) {
+      // KODIPROP key might be like: inputstream.adaptive.license_key=<kid>:<key>
+      const licenseKey = it.kodi['inputstream.adaptive.license_key'] || it.kodi['inputstream.adaptive.license_key2'];
+      if (licenseKey) {
+        const parts = licenseKey.split(':');
+        if (parts.length >= 2) {
+          it.clearkey = { keyId: parts[0].trim(), key: parts.slice(1).join(':').trim() };
+        }
+      }
     }
 
-    function updateChannelInfo(c) {
-      document.getElementById("player-title").textContent = c.channel_name;
-      document.getElementById("channel-meta").textContent = `${c.channel_genre} • ${c.language}`;
-      document.getElementById("channel-desc").innerHTML = `
-        Now playing: <b>${c.channel_name}</b><br>
-        Genre: ${c.channel_genre}<br>
-        Language: ${c.language}<br>
-        Last update: ${c.last_update}
-      `;
-    }
+    return items;
+  }
 
-    function setupXHRInterceptor(cookie) {
-      const orig = XMLHttpRequest.prototype.open;
-      XMLHttpRequest.prototype.open = function(m, url) {
-        try {
-          if (url && typeof url === "string" && !url.includes("__hdnea__")) {
-            url += (url.includes("?") ? "&" : "?") + cookie;
-            arguments[1] = url;
-          }
-        } catch(e){}
-        return orig.apply(this, arguments);
+  // Append cookie to URL the same way your M3U sample already does (adds &xxx=%7Ccookie=... or append cookie param)
+  function applyCookieToUrl(url, exthttp) {
+    try {
+      if (!exthttp || !exthttp.cookie) return url;
+      // If the url already contains cookie or __hdnea__, don't duplicate
+      if (url.includes(exthttp.cookie) || url.includes('__hdnea__')) return url;
+
+      // Some streams expect `&xxx=%7Ccookie=COOKIEVALUE` (as in your sample)
+      // We'll append that pattern if there's already a query string, otherwise append ?cookie=...
+      const encoded = encodeURIComponent(`|cookie=${exthttp.cookie}`);
+      if (url.includes('?')) {
+        return url + '&xxx=' + encoded;
+      } else {
+        return url + '?xxx=' + encoded;
+      }
+    } catch (e) {
+      return url;
+    }
+  }
+
+  /**************************************************************************
+   * Player and UI logic
+   ***************************************************************************/
+  let playerInstance = null;
+  let parsedList = [];
+
+  function showSkeleton(msg='Loading...') {
+    const el = document.getElementById('skeleton');
+    el.textContent = msg;
+    el.style.display = 'flex';
+  }
+  function hideSkeleton() { document.getElementById('skeleton').style.display = 'none'; }
+  function showError(msg) {
+    const el = document.getElementById('error');
+    document.getElementById('error-text').textContent = msg;
+    el.style.display = 'flex';
+    hideSkeleton();
+    setTimeout(()=>el.style.display='none', 8000);
+  }
+
+  // Create the channel list UI
+  function renderChannelList(items) {
+    const container = document.getElementById('channel-list');
+    container.innerHTML = '';
+    items.forEach((it, idx) => {
+      const node = document.createElement('div');
+      node.className = 'list-item';
+      node.dataset.index = idx;
+
+      const img = document.createElement('img');
+      img.className = 'thumb';
+      img.src = it.attrs['tvg-logo'] || it.attrs['tvg-logo'] || it.attrs.logo || '';
+      img.onerror = () => img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="90"><rect width="100%" height="100%" fill="%23111"/></svg>';
+
+      const txt = document.createElement('div');
+      txt.style.flex = '1';
+      txt.innerHTML = `<div class="title">${escapeHtml(it.title)}</div>
+                       <div class="sub">${escapeHtml(it.attrs['group-title']||it.attrs['tvg-id']||'')}</div>`;
+
+      node.appendChild(img);
+      node.appendChild(txt);
+      node.addEventListener('click', ()=> playIndex(idx));
+      container.appendChild(node);
+    });
+
+    // Update meta area
+    document.getElementById('channel-meta').textContent = `${items.length} channels parsed`;
+  }
+
+  function escapeHtml(s){ if(!s) return ''; return s.replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+  // Build JW config for a parsed item
+  function buildJWConfigForItem(it) {
+    const fileUrl = it.finalUrl || it.url;
+    const isDash = /\.mpd($|\?)/i.test(fileUrl);
+    const isHls = /\.m3u8($|\?)/i.test(fileUrl);
+
+    const playlistItem = {
+      title: it.title,
+      image: it.attrs['tvg-logo'] || undefined,
+      file: fileUrl
+    };
+
+    // if clearkey present, configure drm.clearkey
+    if (it.clearkey && it.clearkey.keyId && it.clearkey.key) {
+      playlistItem.drm = {
+        clearkey: {
+          keyId: it.clearkey.keyId,
+          key: it.clearkey.key
+        }
       };
     }
 
-    function showSkeleton(msg="Loading...") {
-      const el = document.getElementById("skeleton");
-      el.textContent = msg;
-      el.style.display = "flex";
+    // hint type for JWPlayer (optional)
+    if (isDash) playlistItem.type = 'mpd';
+    else if (isHls) playlistItem.type = 'hls';
+
+    return playlistItem;
+  }
+
+  // Setup a patch for XHR.open to append cookie to resource requests during playback
+  // This is a fallback; we also append cookie to the main file URL where possible.
+  function setupXHRInterceptorForCookie(items) {
+    // gather cookie strings from items
+    const cookies = new Set();
+    for (const it of items) {
+      if (it.exthttp && it.exthttp.cookie) cookies.add(it.exthttp.cookie);
     }
-    function hideSkeleton() {
-      document.getElementById("skeleton").style.display = "none";
-    }
-    function showError(msg) {
-      document.getElementById("error-text").textContent = msg;
-      document.getElementById("error").style.display = "flex";
+    if (cookies.size === 0) return; // nothing to do
+
+    const cookieArray = Array.from(cookies);
+    const origOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url) {
+      try {
+        if (typeof url === 'string') {
+          // If url already contains cookie, skip
+          let needs = true;
+          for (const c of cookieArray) {
+            if (url.includes(c) || url.includes('__hdnea__')) { needs = false; break; }
+          }
+          if (needs) {
+            // Append pattern used in sample: &xxx=%7Ccookie=COOKIE
+            // If URL has query, append, else add ?xxx=
+            const encoded = encodeURIComponent(`|cookie=${cookieArray[0]}`);
+            if (url.includes('?')) url = url + '&xxx=' + encoded;
+            else url = url + '?xxx=' + encoded;
+            // replace argument (arguments is not a real array here but it's fine to call as below)
+            arguments[1] = url;
+          }
+        }
+      } catch (e) { console.warn('XHR patch', e); }
+      return origOpen.apply(this, arguments);
+    };
+  }
+
+  function destroyPlayer() {
+    try {
+      if (playerInstance) {
+        try { playerInstance.remove(); } catch(e){}
+        playerInstance = null;
+      }
+    } catch(e){}
+  }
+
+  function playIndex(idx) {
+    const it = parsedList[idx];
+    if (!it) return showError('Item not found');
+    playItem(it);
+    // update meta text
+    document.getElementById('channel-meta').innerHTML = `<strong>${escapeHtml(it.title)}</strong><div class="sub">${escapeHtml(it.attrs['group-title']||'')}</div>`;
+  }
+
+  function playItem(it) {
+    hideSkeleton();
+    destroyPlayer();
+    showSkeleton('Starting player...');
+
+    const playlistItem = buildJWConfigForItem(it);
+    // create player
+    playerInstance = jwplayer('player').setup({
+      playlist: [ playlistItem ],
+      width: '100%',
+      height: '100%',
+      autostart: true,
+      controls: true,
+      primary: 'html5',
+      hlshtml: true,
+      stretching: 'uniform',
+      playbackRateControls: true,
+      skin: { name: 'custom' }
+    });
+
+    playerInstance.on('ready', function() {
       hideSkeleton();
+      try { playerInstance.play(); } catch(e){}
+      ensurePlayerFill();
+    });
+
+    playerInstance.on('error', function(e){
+      hideSkeleton();
+      console.error('JW error', e);
+      showError('Player error: ' + (e.message || JSON.stringify(e)));
+    });
+
+    // small resize handling
+    window.setTimeout(()=>{ try{ const frame=document.getElementById('player-frame'); if(playerInstance && typeof playerInstance.resize==='function') playerInstance.resize(frame.clientWidth, frame.clientHeight); }catch(e){} },200);
+  }
+
+  function ensurePlayerFill(){
+    try{
+      const playerElement = document.getElementById('player');
+      playerElement.style.width = '100%';
+      playerElement.style.height = '100%';
+      document.querySelectorAll('.jwplayer, .jw-embed').forEach(el => { el.style.width='100%'; el.style.height='100%'; });
+    }catch(e){}
+  }
+
+  /**************************************************************************
+   * Loading flow: fetch M3U, parse, render list
+   ***************************************************************************/
+  async function loadM3UFromUrl(url) {
+    showSkeleton('Fetching M3U...');
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch M3U: ' + res.status);
+      const txt = await res.text();
+      hideSkeleton();
+      return txt;
+    } catch (e) {
+      hideSkeleton();
+      throw e;
     }
+  }
+
+  async function loadAndRender(m3uText) {
+    try {
+      showSkeleton('Parsing M3U...');
+      parsedList = parseM3U(m3uText);
+      if (!parsedList.length) throw new Error('No channels found in M3U');
+      renderChannelList(parsedList);
+      setupXHRInterceptorForCookie(parsedList);
+      hideSkeleton();
+      // auto play first
+      playIndex(0);
+    } catch (e) {
+      hideSkeleton();
+      console.error(e);
+      showError(e.message || String(e));
+    }
+  }
+
+  /**************************************************************************
+   * UI bindings
+   ***************************************************************************/
+  document.getElementById('load-m3u').addEventListener('click', async ()=>{
+    const val = document.getElementById('m3u-url').value.trim();
+    if (!val) {
+      // parse sample
+      await loadAndRender(SAMPLE_M3U);
+      return;
+    }
+    showSkeleton('Downloading M3U...');
+    try {
+      const txt = await loadM3UFromUrl(val);
+      await loadAndRender(txt);
+    } catch (e) {
+      showError('Failed to load M3U: ' + e.message);
+    }
+  });
+
+  // on page load: check ?m3u=
+  (async function initFromQuery(){
+    const params = new URLSearchParams(location.search);
+    const m3uParam = params.get('m3u');
+    const m3uInput = document.getElementById('m3u-url');
+    if (m3uParam) {
+      const decoded = decodeURIComponent(m3uParam);
+      m3uInput.value = decoded;
+      try {
+        const txt = await loadM3UFromUrl(decoded);
+        await loadAndRender(txt);
+        return;
+      } catch (e) {
+        console.warn('Failed to load m3u from query param', e);
+      }
+    }
+    // fallback to embedded sample for convenience
+    m3uInput.value = '';
+    await loadAndRender(SAMPLE_M3U);
+  })();
+
+  // small resize observer for player
+  window.addEventListener('resize', ()=>{ ensurePlayerFill(); if (playerInstance && typeof playerInstance.resize==='function'){ try{ const f=document.getElementById('player-frame'); playerInstance.resize(f.clientWidth, f.clientHeight);}catch(e){} } });
+
   </script>
 </body>
 </html>
