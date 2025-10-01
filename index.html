@@ -1,47 +1,94 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>JioTV Watch</title>
-  <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet" />
-  <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/videojs-contrib-eme@3.10.0/dist/videojs-contrib-eme.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NetKami Sports Streaming</title>
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-gray-100 text-gray-900">
 
-<video id="player" class="video-js vjs-default-skin" controls autoplay preload="auto" style="width:100%;height:auto;"></video>
+  <!-- Navbar -->
+  <nav class="bg-gray-900 text-white px-6 py-4 flex justify-between items-center">
+    <h1 class="text-2xl font-bold">NetKami</h1>
+    <ul class="hidden md:flex space-x-6">
+      <li><a href="#features" class="hover:text-orange-500 transition">Features</a></li>
+      <li><a href="#channels" class="hover:text-orange-500 transition">Live Matches</a></li>
+      <li><a href="#contact" class="hover:text-orange-500 transition">Contact</a></li>
+    </ul>
+    <button class="md:hidden px-3 py-2 border rounded border-white" onclick="toggleMenu()">Menu</button>
+  </nav>
 
-<script>
-  const id = new URLSearchParams(window.location.search).get('id');
-  if (!id) throw new Error("Channel ID is required");
+  <!-- Mobile menu -->
+  <ul id="mobileMenu" class="md:hidden hidden bg-gray-800 text-white px-6 py-4 space-y-2">
+    <li><a href="#features" class="block hover:text-orange-500 transition">Features</a></li>
+    <li><a href="#channels" class="block hover:text-orange-500 transition">Live Matches</a></li>
+    <li><a href="#contact" class="block hover:text-orange-500 transition">Contact</a></li>
+  </ul>
 
-  async function start() {
-    const channels = await fetchAndParseM3U('https://jiotvplus.iptv07india.workers.dev/playlist');
-    const ch = channels.find(c => c.mpd.includes(`id=${id}`));
-    if (!ch) throw new Error("Channel not found");
-
-    const player = videojs('player');
-    player.ready(() => {
-      player.tech().xhr.beforeRequest = (options) => ({
-        ...options,
-        headers: {
-          'User-Agent': 'plaYtv/7.1.3 (Linux;Android 13)',
-          'Referer': 'https://www.jiotv.com',
-          'Origin': 'https://www.jiotv.com',
-        }
-      });
-    });
-
-    const src = { src: ch.mpd, type: 'application/dash+xml' };
-    if (ch.kid && ch.key) {
-      src.keySystems = { 'org.w3.clearkey': { clearkeys: { [ch.kid]: ch.key } } };
+  <script>
+    function toggleMenu() {
+      document.getElementById('mobileMenu').classList.toggle('hidden');
     }
-    player.src(src);
-    player.play();
-  }
+  </script>
 
-  start();
-</script>
+  <!-- Hero Section -->
+  <header class="bg-gradient-to-r from-orange-400 to-red-500 text-white text-center py-24 px-6">
+    <h2 class="text-4xl md:text-6xl font-extrabold mb-4">NetKami Sports Streaming</h2>
+    <p class="text-lg md:text-2xl mb-8">Live Sports, Anytime, Anywhere – All Your Favorite Matches in One Place!</p>
+    <a href="#channels" class="bg-white text-orange-500 font-bold px-6 py-3 rounded-lg hover:bg-gray-100 transition">Watch Now</a>
+  </header>
+
+  <!-- Features Section -->
+  <section id="features" class="py-20 px-6 max-w-7xl mx-auto">
+    <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">Why Choose NetKami?</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition text-center">
+        <h3 class="text-xl font-bold text-orange-500 mb-3">Live Matches</h3>
+        <p>Watch football, cricket, basketball and more in real-time with zero delays.</p>
+      </div>
+      <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition text-center">
+        <h3 class="text-xl font-bold text-orange-500 mb-3">HD Streaming</h3>
+        <p>Enjoy crystal-clear HD streaming on any device, from mobile to TV.</p>
+      </div>
+      <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition text-center">
+        <h3 class="text-xl font-bold text-orange-500 mb-3">Any Device</h3>
+        <p>Access NetKami from your phone, tablet, laptop or Smart TV easily.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Channels Section -->
+  <section id="channels" class="py-20 px-6 bg-gray-50">
+    <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">Featured Channels & Live Matches</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+      <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition text-center">
+        <h3 class="text-xl font-bold text-orange-500 mb-2">Football Live</h3>
+        <p>Premier League – Live Now</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition text-center">
+        <h3 class="text-xl font-bold text-orange-500 mb-2">Cricket World</h3>
+        <p>ICC T20 – Upcoming</p>
+      </div>
+      <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition text-center">
+        <h3 class="text-xl font-bold text-orange-500 mb-2">Basketball Pro</h3>
+        <p>NBA Highlights</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact / Footer Section -->
+  <footer id="contact" class="bg-gray-900 text-white text-center py-12 px-6">
+    <h3 class="text-2xl font-bold mb-4">Get in Touch</h3>
+    <p class="mb-6">Have questions or want to suggest matches? Reach out to us!</p>
+    <div class="flex justify-center space-x-4 mb-6">
+      <a href="#" class="text-orange-500 hover:underline">Privacy Policy</a>
+      <a href="#" class="text-orange-500 hover:underline">Terms of Service</a>
+      <a href="#" class="text-orange-500 hover:underline">Contact Us</a>
+    </div>
+    <p>&copy; 2025 NetKami. All rights reserved.</p>
+  </footer>
 
 </body>
 </html>
