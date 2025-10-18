@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pink ArtPlayer — Custom Icons + Loader</title>
+
+  <!-- ArtPlayer CSS (CDN - swap if you prefer) -->
+  <link rel="stylesheet" href="https://unpkg.com/artplayer/dist/artplayer.css" />
+
+  <style>
+    /* Base page */
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: linear-gradient(180deg,#fff6fb 0%, #ffeef8 100%);
+      font-family: Inter, Arial, sans-serif;
+    }
+
+    /* Player container sizing */
+    .player-wrap {
+      width: 92%;
+      max-width: 980px;
+      aspect-ratio: 16/9;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(255, 105, 180, 0.12);
+      position: relative;
+      background: #000;
+    }
+
+    /* Make ArtPlayer controls pink & JW-like */
+    .artplayer {
+      font-family: inherit;
+      --ap-main-color: #ff58a3; /* main pink used by some ArtPlayer internals */
+    }
+
+    /* Control bar styling */
+    .artplayer .artplayer-controller {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.25));
+      backdrop-filter: blur(6px);
+      border-radius: 10px;
+      padding: 10px;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      margin: 0;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+      align-items: center;
+    }
+
+    /* Buttons rounded & translucent */
+    .artplayer .artplayer-control-button,
+    .artplayer .artplayer-right {
+      background: rgba(255,255,255,0.03);
+      border-radius: 10px;
+      padding: 6px;
+      margin-left: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 36px;
+      min-height: 36px;
+      transition: transform .12s ease, background .12s;
+    }
+    .artplayer .artplayer-control-button:hover {
+      transform: translateY(-3px);
+      background: rgba(255,88,163,0.08);
+      box-shadow: 0 6px 20px rgba(255,88,163,0.08);
+    }
+
+    /* Icon sizing inside buttons */
+    .artplayer .artplayer-control-button svg {
+      width: 18px;
+      height: 18px;
+      display:block;
+      fill: #ff2f93;
+      stroke: #ff2f93;
+    }
+
+    /* Progress bar pink */
+    .artplayer .artplayer-progress-bar {
+      background: rgba(255,88,163,0.12);
+      height: 9px;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .artplayer .artplayer-progress-played {
+      background: linear-gradient(90deg,#ff2f93,#ff6fb1);
+      height: 100%;
+    }
+    .artplayer .artplayer-progress-handle {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(255,47,147,0.18);
+      background: white;
+      border: 3px solid #ff2f93;
+    }
+
+    /* Time text */
+    .artplayer .artplayer-time {
+      color: #ffd2e8;
+      font-weight: 600;
+      font-size: 13px;
+      margin-left: 10px;
+    }
+
+    /* Volume panel style */
+    .artplayer .artplayer-volume {
+      background: rgba(0,0,0,0.4);
+      border-radius: 8px;
+      padding: 8px;
+    }
+
+    /* Settings menu (pink highlights) */
+    .artplayer .artplayer-setting-list .artplayer-setting-item:hover {
+      background: rgba(255,47,147,0.06);
+      color: #ff2f93;
+    }
+
+    /* Fullscreen button - highlight */
+    .artplayer .artplayer-fullscreen {
+      border-radius: 10px;
+    }
+
+    /* Custom big play button centered */
+    .artplayer .artplayer-pause-button,
+    .artplayer .artplayer-play-button {
+      background: rgba(0,0,0,0.35);
+      border-radius: 50%;
+      padding: 14px;
+      transition: transform .12s;
+    }
+    .artplayer .artplayer-play-button svg {
+      width: 34px;
+      height: 34px;
+      fill: #ff2f93;
+      stroke: none;
+    }
+
+    /* Custom loading overlay (center spinner) */
+    .custom-loader {
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index: 60;
+      pointer-events:none;
+      background: linear-gradient(0deg, rgba(0,0,0,0.35), rgba(0,0,0,0.05));
+      transition: opacity .25s ease, visibility .25s ease;
+    }
+    .custom-loader.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    /* Animated spinner (pink) */
+    .spinner {
+      width: 78px;
+      height: 78px;
+      display:inline-block;
+    }
+    .spinner svg circle {
+      stroke: #ff85b7;
+      stroke-linecap: round;
+      stroke-width: 6;
+      fill: none;
+      stroke-dasharray: 120;
+      stroke-dashoffset: 120;
+      animation: dash 1.05s cubic-bezier(.4,.0,.2,1) infinite;
+    }
+    .spinner svg .dot {
+      fill:#ff2f93;
+      animation: dotpop 1.05s infinite;
+    }
+    @keyframes dash {
+      0% { stroke-dashoffset: 120; transform: rotate(0deg); }
+      50% { stroke-dashoffset: 40; transform: rotate(180deg); }
+      100% { stroke-dashoffset: 120; transform: rotate(360deg); }
+    }
+    @keyframes dotpop {
+      0% { transform: translateY(0); opacity: 0.2; }
+      40% { transform: translateY(-6px); opacity: 1; }
+      100% { transform: translateY(0); opacity: 0.2; }
+    }
+
+    /* Responsive tweaks */
+    @media (max-width:640px){
+      .artplayer .artplayer-controller { padding: 8px; bottom: 8px; left: 8px; right: 8px; }
+      .artplayer .artplayer-control-button { min-width: 34px; min-height: 34px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="player-wrap">
+    <!-- Place for ArtPlayer -->
+    <div id="player"></div>
+
+    <!-- Custom loader (shows until 'ready' event) -->
+    <div id="customLoader" class="custom-loader">
+      <div class="spinner" aria-hidden="true">
+        <svg viewBox="0 0 48 48">
+          <circle cx="24" cy="24" r="16"></circle>
+          <circle class="dot" cx="24" cy="8" r="3"></circle>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- ArtPlayer JS (CDN - swap if needed) -->
+  <script src="https://unpkg.com/artplayer/dist/artplayer.js"></script>
+
+  <script>
+    // Custom SVG icons (strings). You can replace these with your own SVGs.
+    const ICONS = {
+      play: `
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 3.868v16.264A1 1 0 0 0 6.63 21.04L20.3 12.93a1 1 0 0 0 0-1.86L6.63 2.96A1 1 0 0 0 5 3.868z"/>
+        </svg>
+      `,
+      pause: `
+        <svg viewBox="0 0 24 24"><path d="M6 5h3v14H6zM15 5h3v14h-3z"/></svg>
+      `,
+      volume: `
+        <svg viewBox="0 0 24 24"><path d="M3 10v4h4l5 5V5L7 10H3z"/></svg>
+      `,
+      fullscreen: `
+        <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zM17 5h-3V3h5v5h-2V5zM7 5h3V3H5v5h2V5zM17 19v-3h2v5h-5v-2h3z"/></svg>
+      `,
+      settings: `
+        <svg viewBox="0 0 24 24"><path d="M12 8.6A3.4 3.4 0 1 0 12 15.4 3.4 3.4 0 0 0 12 8.6zm9.4 3.4c0 .7-.1 1.4-.3 2.1l2.1 1.6-2 3.5-2.7-1.1c-.6.4-1.3.7-2.1.9l-.4 2.8h-4l-.4-2.8c-.8-.2-1.5-.5-2.1-.9L4.8 19l-2-3.5 2.1-1.6c-.2-.7-.3-1.4-.3-2.1s.1-1.4.3-2.1L2.8 7.6 4.8 4l2.7 1.1c.6-.4 1.3-.7 2.1-.9L12 2.4h4l.4 2.8c.8.2 1.5.5 2.1.9l2.7-1.1L21.2 7.6c.2.7.3 1.4.3 2.1z"/></svg>
+      `,
+      cc: `
+        <svg viewBox="0 0 24 24"><path d="M21 4H3a1 1 0 0 0-1 1v14l4-3h15a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1zM7 11h2v2H7v-2zm-1-3h4v2H6V8zm8 3h4v2h-4v-2zm0-3h4v2h-4V8z"/></svg>
+      `,
+      // any other icons you need...
+    };
+
+    // Helper to inject icon strings into a mapping ArtPlayer understands.
+    const iconsConfig = {
+      play: ICONS.play,
+      pause: ICONS.pause,
+      volume: ICONS.volume,
+      fullscreen: ICONS.fullscreen,
+      setting: ICONS.settings, // label 'setting' used by artplayer
+      subtitle: ICONS.cc
+    };
+
+    // Example source — replace with your video URL (mp4 or HLS m3u8)
+    const source = {
+      url: 'https://unpkg.com/artplayer/assets/sample/video.mp4',
+      type: 'auto',
+      // poster: 'https://.../poster.jpg'
+    };
+
+    // Create ArtPlayer
+    const ap = new ArtPlayer({
+      container: document.getElementById('player'),
+      url: source.url,
+      preload: 'auto',
+      title: 'Pink Custom ArtPlayer',
+      subtitle: '',
+      autoSize: true,
+      playsinline: true,
+      // icons can be passed — here we feed SVGs
+      icons: iconsConfig,
+      // controls / settings
+      controls: ['play', 'progress', 'time', 'volume', 'setting', 'pip', 'airplay', 'fullscreen'],
+      // more options: you can add quality, danmaku etc.
+      // Example: custom settings list (we keep default)
+    });
+
+    // Show custom loader until ready / waiting states
+    const loader = document.getElementById('customLoader');
+    function showLoader() {
+      loader.classList.remove('hidden');
+    }
+    function hideLoader() {
+      loader.classList.add('hidden');
+    }
+
+    // Initially show loader
+    showLoader();
+
+    // Hide loader on ready or play
+    ap.on('ready', () => {
+      hideLoader();
+    });
+    ap.on('play', () => {
+      hideLoader();
+    });
+    // Show loader when buffering
+    ap.on('waiting', () => {
+      showLoader();
+    });
+
+    // If network error or fatal, hide loader and show message:
+    ap.on('error', (e) => {
+      hideLoader();
+      console.warn('ArtPlayer error', e);
+    });
+
+    // Example: Replace native big play icon with our custom large button
+    // ArtPlayer already uses icons mapping for the play button, but we can add CSS overrides if needed.
+
+    // OPTIONAL: If you want to swap the loader to a GIF, uncomment below and set the URL:
+  
+    const customGifUrl = 'https://i.giphy.com/Yc65Sk2Hwkzgk.gif';
+    loader.innerHTML = '<img src="'+customGifUrl+'" alt="loading" style="width:120px;height:120px;"/>';
+    
+  </script>
+</body>
+  </html>
+  
