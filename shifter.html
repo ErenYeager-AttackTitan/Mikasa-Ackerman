@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Shifter Player — Demo</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:#111; color:#eee; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; }
+  .player-wrap { width: 960px; max-width: calc(100% - 32px); }
+  .video-box { position: relative; background:#000; }
+  video { width:100%; height:auto; display:block; background:#000; }
+  .controls { margin-top:8px; display:flex; gap:8px; align-items:center; }
+  .btn { background:#222; color:#fff; padding:8px 12px; border-radius:6px; border:1px solid #333; cursor:pointer; }
+  .info { margin-left:auto; font-size:13px; color:#bbb }
+  /* thumbnail overlay styling (player injects this element) */
+  .shifter-thumb { position:absolute; bottom:60px; left:50%; transform:translateX(-50%); width:160px; height:90px; pointer-events:none; display:none; border:1px solid #444; background:#000; z-index:1000; overflow:hidden; }
+  .shifter-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+</style>
+</head>
+<body>
+  <div class="player-wrap">
+    <div class="video-box">
+      <!-- The library auto-binds to data-shifter attribute -->
+      <video id="shifterVideo" data-shifter="https://raw.githubusercontent.com/ErenYeager-AttackTitan/Shifter/refs/heads/main/manifest.shifter"
+             controls autoplay muted playsinline></video>
+      <!-- Thumbnail container will be created by player, but we provide a fallback spot -->
+      <div id="thumb-placeholder" class="shifter-thumb" aria-hidden="true"><img alt="thumb"></div>
+    </div>
+
+    <div class="controls">
+      <button id="playBtn" class="btn">Play/Pause</button>
+      <button id="reloadManifestBtn" class="btn">Reload Manifest</button>
+      <div class="info" id="playerInfo">Shifter Player</div>
+    </div>
+  </div>
+
+<script>
+/*!
+ * ShifterJS v2.0 in-page (full)
+ * Full-featured adaptive streaming library for .shft / .shifter
+ * Live & VOD, adaptive bitrate, audio, subtitles, thumbnails, caching
+ *
+ * NOTE: This is a single-file in-page implementation. The video tag must include:
+ *   data-shifter="MANIFEST_URL"
+ * Example:
+ *   <video data-shifter="https://.../manifest.shifter"></video>
+ */
+
+class ShifterAutoPlayer {
+    constructor() {
+        this.initVideos();
+    }
+
+    initVideos() {
+        const videos = document.querySelectorAll('video[data-shifter]');
+        videos.forEach(video => {
+            const manifestUrl = video.getAttribute('data-shifter');
+            if (manifestUrl) {
+                // If a placeholder thumbnail container exists, let the instance use it
+                const thumbPlaceholder = document.getElementById('thumb-placeholder');
+                new ShifterInstance(video, manifestUrl, thumbPlaceholder);
+            }
+        });
+    }
+}
+
+class ShifterInstance {
+    constructor(video, manifestUrl, thumbnailPlaceholder=null) {
+        this.video = video;
+        this.manifestUrl = manifestUrl;
+        this.manifest = null;
+        this.levels = [];
+        this.currentLevel = null;
+        this.fragmentIndex = 0;
+        this.live = false;
+        this.buffer = 5; // seconds per fragment (match CLI)
+        this.fragmentCache = new Set();
+        this.thumbnails = [];
+        this.subtitles = [];
+        this.mediaSource = null;
+        this.sourceBuffer = null;
+        this.audioBuffer = null;
+        this.thumbnailContainer = null;
+        this.thumbnailImage = null;
+        this.prefetchCount = 3; // number of fragments to prefetch in live mode
+        this.estimatedNetworkBps = 5e6; // starting estimate
+        this.manifestFetchTs = 0;
+        this._initPlaceholder(thumbnailPlaceholder);
+        this.loadManifest();
+    }
+
+    _initPlaceholder(thumbnailPlaceholder) {
+        if (thumbnailPlaceholder) {
+            this.thumbnailContainer = thumbnailPlaceholder;
+            // ensure container has correct class
+            this.thumbnailContainer.classList.add('shifter-thumb');
+            const img = this.thumbnailContainer.querySelector('img') || document.createElement('img');
+            if (!this.thumbnailContainer.contains(img)) this.thumbnailContainer.appendChild(img);
+            this.thumbnailImage = img;
+            // ensure parent position
+            if (this.video.parentElement) {
+                const style = getComputedStyle(this.video.parentElement).position;
+                if (style === 'static') this.video.parentElement.style.position = 'relative';
+            }
+        }
+    }
+
+    async loadManifest() {
+        if (this.manifest) return; // Already loaded
+        try {
+            // Fetch manifest, measure time to get a quick network hint
+            const t0 = performance.now();
+            const res = await fetch(this.manifestUrl);
+            const t1 = performance.now();
+            this.manifestFetchTs = Date.now();
+            if (!res.ok) throw new Error('Manifest fetch failed: ' + res.status);
+            this.manifest = await res.json();
+            // gentle network estimate (manifest size/time)
+            try {
+                const size = parseInt(res.headers.get('content-length') || '0');
+                const dt = Math.max((t1 - t0)/1000, 0.001);
+                if (size>0) {
+                    this.estimatedNetworkBps = Math.max(this.estimatedNetworkBps, (size/dt)*0.8);
+                }
+            } catch(e) { /* ignore */ }
+
+            this.live = this.manifest.tag === "live";
+            this.levels = this.manifest.adaptive || [];
+            console.log("Shifter manifest loaded:", this.manifest);
+
+            // Load thumbnails and subtitles (use first level as canonical)
+            if (this.levels[0]) {
+                if (this.levels[0].thumbnailChunks) this.thumbnails = this.levels[0].thumbnailChunks.slice();
+                if (this.levels[0].subtitleChunks) this.subtitles = this.levels[0].subtitleChunks.slice();
+            }
+
+            this.setupThumbnailContainerIfMissing();
+            this.selectInitialLevel();
+        } catch (e) {
+            console.error("Failed to load manifest:", e);
+            const info = document.getElementById('playerInfo');
+            if (info) info.textContent = 'Manifest load error: ' + e.message;
+        }
+    }
+
+    setupThumbnailContainerIfMissing(){
+        if (!this.thumbnailContainer) {
+            // Create dynamic thumbnail container and image
+            let container = document.createElement('div');
+            container.className = 'shifter-thumb';
+            let img = document.createElement('img');
+            container.appendChild(img);
+            this.thumbnailContainer = container;
+            this.thumbnailImage = img;
+            if (this.video.parentElement) {
+                const style = getComputedStyle(this.video.parentElement).position;
+                if (style === 'static') this.video.parentElement.style.position = 'relative';
+                this.video.parentElement.appendChild(container);
+            } else {
+                document.body.appendChild(container);
+            }
+        }
+    }
+
+    selectInitialLevel() {
+        if (!this.levels || this.levels.length === 0) {
+            console.error("No adaptive levels in manifest");
+            return;
+        }
+        // choose lowest bitrate to start (safer)
+        this.currentLevel = this.levels.reduce((prev, level) => (level.bitrate < prev.bitrate ? level : prev), this.levels[0]);
+        this.fragmentIndex = 0;
+        this.setupMediaSource();
+    }
+
+    setupMediaSource() {
+        if (!('MediaSource' in window)) {
+            console.error("MediaSource not supported.");
+            return;
+        }
+        this.mediaSource = new MediaSource();
+        this.video.src = URL.createObjectURL(this.mediaSource);
+        this.mediaSource.addEventListener('sourceopen', () => {
+            // create sourcebuffers lazily in append flow but ensure we can start
+            this.appendNextFragment();
+        });
+        // show thumbnails while scrubbing/timeupdate
+        this.video.addEventListener('timeupdate', () => this.updateThumbnail());
+        // attempt basic network estimation during playback by measuring fragment durations later
+    }
+
+    async appendNextFragment() {
+        // If no manifest or no currentLevel, try reload manifest
+        if (!this.currentLevel) {
+            await this.loadManifest();
+            if (!this.currentLevel) return;
+        }
+
+        // If we've consumed all known fragments
+        if (this.fragmentIndex >= (this.currentLevel.videoChunks || []).length) {
+            if (this.live) {
+                // re-fetch manifest occasionally to pick up new fragments
+                await this._maybeRefreshManifest();
+                setTimeout(()=>this.appendNextFragment(), 800);
+            }
+            return;
+        }
+
+        // Build a cache key and skip loading if already loaded
+        const fragKey = `${this.currentLevel.resolution}_${this.fragmentIndex}`;
+        if (this.fragmentCache.has(fragKey)) {
+            // already appended, proceed to next
+            this.fragmentIndex++;
+            setTimeout(()=>this.appendNextFragment(), this.buffer * 1000);
+            return;
+        }
+
+        const vUrl = this._normalizeUrl(this.currentLevel.videoChunks[this.fragmentIndex]);
+        const aUrl = this._normalizeUrl(this.currentLevel.audioChunks[this.fragmentIndex]);
+
+        try {
+            // download both in parallel
+            const t0 = performance.now();
+            const [vResp, aResp] = await Promise.all([fetch(vUrl), fetch(aUrl)]);
+            if (!vResp.ok || !aResp.ok) throw new Error('Fragment fetch error');
+            const vData = await vResp.arrayBuffer();
+            const aData = await aResp.arrayBuffer();
+            const t1 = performance.now();
+            // update rough bandwidth estimate
+            const bytes = (vData.byteLength || 0) + (aData.byteLength || 0);
+            const dt = Math.max((t1 - t0)/1000, 0.001);
+            this._updateNetworkEstimate(bytes, dt);
+
+            // create source buffers if needed
+            if (!this.sourceBuffer) {
+                try {
+                    this.sourceBuffer = this.mediaSource.addSourceBuffer('video/webm; codecs="vp9,opus"');
+                } catch (e) {
+                    // some browsers may require separate audio buffer
+                    try { this.sourceBuffer = this.mediaSource.addSourceBuffer('video/webm; codecs="vp9"'); } catch(e2){}
+                }
+            }
+            if (!this.audioBuffer) {
+                try {
+                    this.audioBuffer = this.mediaSource.addSourceBuffer('audio/webm; codecs="opus"');
+                } catch(e){}
+            }
+
+            // Append robustly: if buffer is updating, wait for updateend
+            await this._appendBufferSafely(this.sourceBuffer, vData);
+            await this._appendBufferSafely(this.audioBuffer, aData);
+
+            this.fragmentCache.add(fragKey);
+
+        } catch (e) {
+            console.error("Error loading fragment:", e);
+            const info = document.getElementById('playerInfo');
+            if (info) info.textContent = 'Fragment load error';
+            // try once more after a short delay
+            setTimeout(()=>this.appendNextFragment(), 1000);
+            return;
+        }
+
+        // Move to next fragment
+        this.fragmentIndex++;
+        // schedule next append after fragment duration (buffer)
+        setTimeout(()=>this.appendNextFragment(), this.buffer * 1000);
+
+        // Adaptive bitrate decision
+        this.adaptiveSwitch();
+
+        // Prefetch a few more for live
+        if (this.live) this.prefetchNextFragments();
+    }
+
+    _normalizeUrl(pathOrUrl) {
+        // If already absolute URL, return as-is; else treat as relative to manifest location
+        if (!pathOrUrl) return pathOrUrl;
+        try {
+            const url = new URL(pathOrUrl);
+            return url.href;
+        } catch (e) {
+            // relative path: resolve against manifest base
+            try {
+                const base = new URL(this.manifestUrl);
+                // manifest may be raw.githubusercontent URL without proper directory; ensure base ends with '/'
+                const baseDir = base.href.replace(/[^\/]*$/, '');
+                return (new URL(pathOrUrl, baseDir)).href;
+            } catch (ee) {
+                return pathOrUrl;
+            }
+        }
+    }
+
+    async _maybeRefreshManifest() {
+        // refresh manifest if live and last fetch older than 3s
+        if (!this.live) return;
+        const since = Date.now() - this.manifestFetchTs;
+        if (since > 3000) {
+            try {
+                const res = await fetch(this.manifestUrl + '?_=' + Date.now());
+                if (res.ok) {
+                    const m = await res.json();
+                    this.manifest = m;
+                    this.levels = m.adaptive || this.levels;
+                    this.manifestFetchTs = Date.now();
+                    // keep same resolution if available
+                    const sameRes = this.levels.find(l=>l.resolution === this.currentLevel.resolution);
+                    if (sameRes) this.currentLevel = sameRes;
+                }
+            } catch(e){}
+        }
+    }
+
+    _updateNetworkEstimate(bytes, seconds) {
+        if (!seconds || seconds <= 0) return;
+        const bps = bytes / seconds;
+        // smooth the estimate
+        this.estimatedNetworkBps = (this.estimatedNetworkBps * 0.7) + (bps * 0.3);
+    }
+
+    async _appendBufferSafely(sourceBuffer, dataArrayBuffer) {
+        return new Promise((resolve, reject) => {
+            if (!sourceBuffer) return resolve();
+            const tryAppend = () => {
+                if (!sourceBuffer.updating) {
+                    try {
+                        sourceBuffer.appendBuffer(new Uint8Array(dataArrayBuffer));
+                        sourceBuffer.addEventListener('updateend', function onEnd() {
+                            sourceBuffer.removeEventListener('updateend', onEnd);
+                            resolve();
+                        });
+                    } catch (e) {
+                        // possibly quota or codec error
+                        reject(e);
+                    }
+                } else {
+                    // wait and retry
+                    setTimeout(tryAppend, 50);
+                }
+            };
+            tryAppend();
+        });
+    }
+
+    adaptiveSwitch() {
+        // pick the highest bitrate level <= estimatedNetworkBps
+        const sorted = this.levels.slice().sort((a,b)=>a.bitrate - b.bitrate);
+        let pick = sorted[0];
+        for (let i=0;i<sorted.length;i++){
+            if (sorted[i].bitrate <= this.estimatedNetworkBps) pick = sorted[i];
+        }
+        if (pick && this.currentLevel && pick.resolution !== this.currentLevel.resolution) {
+            console.log('Adaptive switch to', pick.resolution, pick.bitrate);
+            // switch gracefully: set new currentLevel and reset index to nearest fragment
+            this.currentLevel = pick;
+            // keep fragmentIndex same if possible; else clamp
+            if (this.fragmentIndex >= (this.currentLevel.videoChunks||[]).length) {
+                this.fragmentIndex = Math.max(0, (this.currentLevel.videoChunks||[]).length - 1);
+            }
+        }
+    }
+
+    async prefetchNextFragments() {
+        // fetch next N fragments but don't append if already cached
+        for (let i = this.fragmentIndex; i < this.fragmentIndex + this.prefetchCount; i++) {
+            if (!this.currentLevel || !this.currentLevel.videoChunks) break;
+            if (i >= this.currentLevel.videoChunks.length) break;
+            const fragKey = `${this.currentLevel.resolution}_${i}`;
+            if (this.fragmentCache.has(fragKey)) continue;
+            const vUrl = this._normalizeUrl(this.currentLevel.videoChunks[i]);
+            const aUrl = this._normalizeUrl(this.currentLevel.audioChunks[i]);
+            try {
+                const [vResp, aResp] = await Promise.all([fetch(vUrl), fetch(aUrl)]);
+                if (!vResp.ok || !aResp.ok) continue;
+                const vData = await vResp.arrayBuffer();
+                const aData = await aResp.arrayBuffer();
+                // append if possible
+                if (this.sourceBuffer && !this.sourceBuffer.updating) {
+                    try { this.sourceBuffer.appendBuffer(new Uint8Array(vData)); } catch(e){}
+                }
+                if (this.audioBuffer && !this.audioBuffer.updating) {
+                    try { this.audioBuffer.appendBuffer(new Uint8Array(aData)); } catch(e){}
+                }
+                this.fragmentCache.add(fragKey);
+            } catch(e){
+                // ignore prefetch errors
+            }
+        }
+    }
+
+    updateThumbnail() {
+        if (!this.thumbnailContainer || this.thumbnails.length === 0) return;
+        let idx = Math.floor(this.video.currentTime / this.buffer);
+        if (idx < 0) idx = 0;
+        if (idx >= this.thumbnails.length) idx = this.thumbnails.length - 1;
+        const url = this._normalizeUrl(this.thumbnails[idx]);
+        if (url) this.thumbnailImage.src = url;
+        this.thumbnailContainer.style.display = 'block';
+        clearTimeout(this._thumbHideTimer);
+        this._thumbHideTimer = setTimeout(()=>{ this.thumbnailContainer.style.display = 'none'; }, 1000);
+    }
+
+    attachSubtitles(trackElement) {
+        // load each subtitle chunk and add as cues (naive simple approach)
+        this.subtitles.forEach(url => {
+            const full = this._normalizeUrl(url);
+            fetch(full).then(r=>r.text()).then(txt=>{
+                // show as a single cue for buffer duration (for demo)
+                try {
+                    const cue = new VTTCue(0, Number(this.buffer), txt);
+                    trackElement.addCue(cue);
+                } catch(e){}
+            }).catch(()=>{});
+        });
+    }
+}
+
+// Auto-init on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', ()=>{
+    window.ShifterAutoPlayer = new ShifterAutoPlayer();
+
+    // small UI bindings
+    const playBtn = document.getElementById('playBtn');
+    const reloadManifestBtn = document.getElementById('reloadManifestBtn');
+    const info = document.getElementById('playerInfo');
+    const v = document.getElementById('shifterVideo');
+
+    if (playBtn) playBtn.addEventListener('click', ()=>{
+        if (v.paused) v.play(); else v.pause();
+    });
+    if (reloadManifestBtn) reloadManifestBtn.addEventListener('click', async ()=>{
+        // naive reload: remove player and re-init
+        try {
+            // find instance (simple approach)
+            const inst = window.ShifterAutoPlayer && window.ShifterAutoPlayer;
+            // actually easiest: reload page
+            location.reload();
+        } catch(e){}
+    });
+    // show simple status
+    if (info) info.textContent = 'Loaded manifest: ' + (new Date()).toLocaleTimeString();
+});
+</script>
+</body>
+    </html>
+  
