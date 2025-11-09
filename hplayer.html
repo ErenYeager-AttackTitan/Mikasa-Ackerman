@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic JW Player with Skip Buttons</title>
+
+    <script src="https://cdn.jwplayer.com/libraries/KB5zFt7A.js"></script> 
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        #player-container {
+            width: 80%;
+            max-width: 900px;
+            margin: 20px auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .info-box {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin: 20px auto;
+            width: 80%;
+            max-width: 900px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="info-box">
+        <strong>Required:</strong> Please add parameters to the URL.<br>
+        Example: <code>?animeEpisodeId=steinsgate-3&ep=230&category=sub</code>
+    </div>
+
+    <div id="player-container"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const playerContainer = document.getElementById('player-container');
+            
+            // --- API Constants ---
+            const baseApiUrl = "https://hianime.streamindia.co.in/api/v2/hianime/episode/sources";
+            const hardcodedServer = "hd-2";
+
+            // --- 3. DYNAMIC API URL CONSTRUCTION ---
+            const urlParams = new URLSearchParams(window.location.search);
+            const animeEpisodeId = urlParams.get('animeEpisodeId');
+            const episodeNumber = urlParams.get('ep');
+            const category = urlParams.get('category');
+            
+            if (!animeEpisodeId || !episodeNumber || !category) {
+                playerContainer.innerHTML = "<h2 style='color: red; text-align: center;'>Error: Video parameters are missing from the URL.</h2>";
+                return;
+            }
+
+            // Construct the final dynamic API URL based on the required pattern
+            const finalApiUrl = `${baseApiUrl}?animeEpisodeId=${animeEpisodeId}?ep=${episodeNumber}&server=${hardcodedServer}&category=${category}`;
+
+            console.log("Fetching data from:", finalApiUrl);
+
+            // --- 4. DATA FETCHING AND PLAYER INITIALIZATION ---
+            fetch(finalApiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status !== 200 || !data.data || !data.data.sources || data.data.sources.length === 0) {
+                        throw new Error("API response was not successful or missing video sources.");
+                    }
+                    
+                    const videoData = data.data;
+                    const primarySource = videoData.sources[0];
+                    
+                    // --- A. MAP TRACKS (Subtitles & Thumbnails) ---
+                    let tracks = [];
+                    let thumbnailVttUrl = null;
+                    
+                    videoData.tracks.forEach(track => {
+                        if (track.lang === 'thumbnails') {
+                            thumbnailVttUrl = track.url;
+                        } else {
+                            tracks.push({
+                                file: track.url,
+                                label: track.lang,
+                                kind: 'captions',
+                                default: track.lang === 'English' // Optional: set English as default
+                            });
+                        }
+                    });
+
+                    // --- B. CRITICAL: Referer Header for HLS/M3U8 Access ---
+                    const refererHeader = videoData.headers.Referer || "https://megacloud.blog/";
+
+                    // --- C. PLAYER CONFIGURATION ---
+                    const playerConfig = {
+                        file: primarySource.url, 
+                        type: primarySource.type,
+                        
+                        // Custom Header Configuration
+                        hlshtml: {
+                            hlsjsConfig: {
+                                xhrSetup: function(xhr, url) {
+                                    xhr.setRequestHeader("Referer", refererHeader);
+                                }
+                            }
+                        },
+                        
+                        // Subtitles
+                        tracks: tracks,
+                        
+                        // Thumbnails (Preview/Scrubbing)
+                        preview: {
+                            vtt: thumbnailVttUrl 
+                        },
+
+                        // Basic Settings
+                        autostart: false,
+                        width: "100%",
+                        aspectratio: "16:9",
+                    };
+                    
+                    // Create the player instance
+                    const player = jwplayer("player-container");
+                    player.setup(playerConfig);
+
+                    // --- 5. ADD CUSTOM SKIP BUTTONS ---
+                    
+                    // JW Player buttons must be added after the player is 'ready'
+                    player.on('ready', function() {
+                        
+                        const introEnd = videoData.intro ? videoData.intro.end : null;
+                        const outroStart = videoData.outro ? videoData.outro.start : null;
+                        
+                        // --- SKIP INTRO BUTTON ---
+                        if (introEnd !== null && introEnd > 0) {
+                            // SVG for a Skip Forward icon (fast-forward)
+                            const skipIntroSVG = `<svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>`;
+
+                            player.addButton(
+                                skipIntroSVG,
+                                "Skip Intro",
+                                function() {
+                                    // Seek to the time immediately after the intro ends
+                                    player.seek(introEnd); 
+                                },
+                                "skip-intro-btn" 
+                            );
+                        }
+
+                        // --- SKIP OUTRO BUTTON (Skip to End or Next Item) ---
+                        if (outroStart !== null) {
+                            // The target time is the start of the outro (or the next point you want)
+                            const seekTime = outroStart; 
+                            
+                            // SVG for a Skip to End icon (e.g., Next Track/Chapter)
+                            const skipOutroSVG = `<svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm-2 2H7v-2h2v2zm6 0h-2v-2h2v2zm2-2h-2v-2h2v2zm-4-14h-2v2h2V4zM4 12c0-4.41 3.59-8 8-8v2H4v-2z"/></svg>`;
+                            
+                            player.addButton(
+                                skipOutroSVG,
+                                "Skip Outro / Credits",
+                                function() {
+                                    // Seek to the start of the outro
+                                    player.seek(seekTime); 
+                                    // For a playlist, you might replace seek with player.next();
+                                },
+                                "skip-outro-btn"
+                            );
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error("Failed to load video data:", error);
+                    playerContainer.innerHTML = `<h2 style='color: red; text-align: center;'>Error loading video: ${error.message}</h2>`;
+                });
+        });
+    </script>
+
+</body>
+</html>
